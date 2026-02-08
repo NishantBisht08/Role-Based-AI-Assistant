@@ -1,41 +1,55 @@
 import os
 from dotenv import load_dotenv
-
 from langchain_community.document_loaders import TextLoader
-
 from langchain_community.vectorstores import Chroma
-
-
 from langchain_community.embeddings import HuggingFaceEmbeddings
-
 from groq import Groq
 
 load_dotenv()
 
-# -----------------------------
-# 1. Load document
-# -----------------------------
-loader = TextLoader("../data/general/employee_handbook.md", encoding="utf-8")
-documents = loader.load()
+ROLE_FOLDERS = {
+    "finance": ["finance"],
+    "hr": ["hr"],
+    "engineering": ["engineering"],
+    "marketing": ["marketing"],
+    "employee": ["general"],
+    "c-level": ["finance", "hr", "engineering", "marketing", "general"]
+}
 
-# -----------------------------
-# 2. Create embeddings & vector DB
-# -----------------------------
+# ASK ROLE 
+role = input("Enter your role: ").lower()
+
+if role not in ROLE_FOLDERS:
+    print("Invalid role.")
+    exit()
+
+print(f"\nAccess granted for role: {role}\n")
+
+#  LOAD ONLY ALLOWED DOCS
+BASE_PATH = "../data"
+documents = []
+
+allowed_folders = ROLE_FOLDERS[role]
+
+for folder in allowed_folders:
+    folder_path = os.path.join(BASE_PATH, folder)
+
+    for file in os.listdir(folder_path):
+        if file.endswith(".md"):
+            loader = TextLoader(os.path.join(folder_path, file), encoding="utf-8")
+            documents.extend(loader.load())
+
+#  EMBEDDINGS
 embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 db = Chroma.from_documents(documents, embedding)
 
-# -----------------------------
-# 3. Ask question
-# -----------------------------
-query = "How many sick leaves are allowed?"
+# QUESTION
+query = input("Ask your question: ")
 
 retrieved_docs = db.similarity_search(query, k=3)
-
 context = "\n\n".join([doc.page_content for doc in retrieved_docs])
 
-# -----------------------------
-# 4. Call Llama 3 via Groq
-# -----------------------------
+# LLM CALL
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 prompt = f"""
@@ -61,6 +75,7 @@ response = client.chat.completions.create(
 
 print("\n Answer:\n")
 print(response.choices[0].message.content)
+
 print("\n Sources:\n")
 for doc in retrieved_docs:
     print(doc.metadata.get("source"))
