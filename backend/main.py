@@ -4,7 +4,7 @@ from pydantic import BaseModel               # Used to define request body struc
 from rag_engine import ask_question          # Your existing RAG function
 from auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
 from auth import create_refresh_token,load_users,save_users 
-import time
+import time  #used for session tracking and lock checks
 
 app = FastAPI()                              # Create FastAPI app
 
@@ -22,7 +22,7 @@ class QueryRequest(BaseModel):
     question: str
 
 
-# NEW: Login endpoint
+# NEW: Login endpoint  (When the user hits login)
 @app.post("/login")
 def login(request: LoginRequest):
 
@@ -41,7 +41,8 @@ def login(request: LoginRequest):
     
     #The session clock starts, absolute session is calculated with env variable
     users=load_users()
-    users[request.username.lower()]["session_start"] = time.time()
+    users[request.username.lower()]["session_start"] = time.time() #overwrites the prev session time everytime 
+                                                                   #when we login and starts the session time from fresh login
     save_users(users)
 
     # NEW: Create JWT token with username and role inside payload
