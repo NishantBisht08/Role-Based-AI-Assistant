@@ -39,6 +39,8 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 # Returns data as a dictionary (username → user details)'''
 
 def load_users():
+    if not os.path.exists("users.json"):   #we check if our db file exists or not
+        return {}
     with open("users.json", "r") as file:
         return json.load(file)
 
@@ -58,17 +60,26 @@ def save_users(users):
 # Compares plain password with stored hash
 '''
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+#parameters are plain_password that user typed and the already stored hash in db 
+#the plain password is then hased to check it with the hashed paswsord in db
+def verify_password(plain_password, hashed_password):            
+    return pwd_context.verify(plain_password, hashed_password) 
+    '''this line pwd line does this internally:
+
+         Takes the plain password
+         Uses same algorithm (Argon2)
+         Re-hashes it
+         Compares with stored hash
+         It returns true if password is correct else false'''
 
 
 # Authenticate user during login
 #called from login endpoint
-def authenticate_user(username, password):
+def authenticate_user(emp_id, password):
     #loads users
     users = load_users()
-    username = username.lower()
-    user = users.get(username)
+    emp_id = emp_id.lower()
+    user = users.get(emp_id)
 
     if not user:
         return None
@@ -85,9 +96,14 @@ def authenticate_user(username, password):
     if user["lock_until"] > current_time:
         return "LOCKED"
 
+    #Before checking paswsord we check if user has atleast setup his password once or it is empty in db,
+    # if empty then login should fail immediately, we do this to avoid crash
+    if not user["password_hash"]:
+        return None
+
     # Check password
-    if verify_password(password, user["password_hash"]):
-        # Correct password → reset everything
+    if verify_password(password, user["password_hash"]): 
+        # If true is returned, then Correct password → reset everything
         user["failed_attempts"] = 0
         user["lock_count"] = 0
         user["lock_until"] = 0
@@ -120,7 +136,7 @@ def authenticate_user(username, password):
         return None             #go back to main, login fails
 
 # Create JWT token, called from login endpoint
-def create_access_token(data: dict):       #username and role is sent as parameter here
+def create_access_token(data: dict):       #emp_id and role is sent as parameter here
     to_encode = data.copy()             
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  #creates expiry time
@@ -130,7 +146,7 @@ def create_access_token(data: dict):       #username and role is sent as paramet
     return encoded_jwt    #returns the jwt payload to main
 
 #Creating Refresh Token, called from login endpoint
-def create_refresh_token(username: str):
+def create_refresh_token(emp_id: str):
     users = load_users()
 
     refresh_token = secrets.token_urlsafe(32)  #generates random token string
@@ -140,8 +156,8 @@ def create_refresh_token(username: str):
     
     refresh_token_expiry= current_time + (REFRESH_TOKEN_EXPIRE_DAYS *24 *60 *60)  #creates refresh expiry time
     
-    users[username]["refresh_token"] = refresh_token_hash            #hash and its expiry time is stored in db
-    users[username]["refresh_token_expiry"] = refresh_token_expiry
+    users[emp_id]["refresh_token"] = refresh_token_hash            #hash and its expiry time is stored in db
+    users[emp_id]["refresh_token_expiry"] = refresh_token_expiry
 
     save_users(users)  #saves the db
 
@@ -153,7 +169,7 @@ def refresh_access_token(refresh_token: str): #recieves the prev refresh token a
     refresh_token_hash = hashlib.sha256(refresh_token.encode()).hexdigest() #hashes the incoming token
     current_time = time.time() #gets current time
 
-    for username, user in users.items(): #loop through users to see which user holds the refresh token
+    for emp_id, user in users.items(): #loop through users to see which user holds the refresh token
 
         # Check if refresh token matches
         if user.get("refresh_token") == refresh_token_hash:
@@ -179,8 +195,9 @@ def refresh_access_token(refresh_token: str): #recieves the prev refresh token a
 
             # Create new access token, if refresh token matches
             access_token = create_access_token({    #calls the create_access_token in this file only
-                "sub": username,
-                "role": user["role"]
+                "sub": emp_id,
+                "role": user["role"],
+                "session_start": user["session_start"]  #adding session_start time in jwt
             })
 
             # Create NEW refresh token (rotation), as refresh token has matched
@@ -203,9 +220,17 @@ def refresh_access_token(refresh_token: str): #recieves the prev refresh token a
 # Verify JWT token
 from jose import JWTError, ExpiredSignatureError    #These are exceptions thrown by jwt.decode(), and without catching them your program will crash.
 
+#called from ask endpoint
 def verify_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) #internally the function checks signature, algorithm, expiry and the token format
+        
+        # Even if JWT signature is valid, it does not guarantee required fields exist.
+        # "sub" represents the user identity (emp_id), so we verify its presence
+        # to prevent crashes and ensure correct authentication flow  
+        if "sub" not in payload or "session_start" not in payload:      
+            return None
+        
         return payload       #if everything is valid, jwt token string is returned to main
     
     except ExpiredSignatureError:
@@ -215,3 +240,84 @@ def verify_token(token: str):
     except JWTError:
         print("Invalid token")           #if token is tampered, malformed, wrong signature
         return None
+    
+#Implementing the logout feature 
+def logout_user(refresh_token: str):
+    users = load_users()               #we load the database
+    refresh_token_hash = hashlib.sha256(refresh_token.encode()).hexdigest() #we hash the incoming token provided by user, cuz refresh token is stored as a hash in db also and we are gonna compare it
+
+    for emp_id, user in users.items():                     #looping through db, finding the correct user
+        if user.get("refresh_token") == refresh_token_hash:
+            user["refresh_token"] = ""                       #invalidating refresh token
+            user["refresh_token_expiry"] = 0                 #setting its expiry time to 0
+            user["session_start"] = 0                        #killing the prev session
+            save_users(users)                                #saving in db
+            return True                                      #true means logout succeeded
+
+    return False                                             #logout failed
+
+
+#emp_id and new password entered by user are sent as parameters here
+def set_user_password(emp_id: str, new_password: str):  
+    users = load_users()        #load users from database
+    emp_id = emp_id.lower()    #lowercase emp_id
+
+    user = users.get(emp_id)       #get the details of user from emp_id
+
+    # User must exist, if he doesn't exist in db, we return user not found
+    if not user:
+        return "USER_NOT_FOUND"
+
+    # Password should NOT already exist, if it does, then we say password already set
+    if user.get("password_hash"):
+        return "ALREADY_SET"
+
+    # Hash new password
+    hashed_password = pwd_context.hash(new_password)
+
+    # Store new hashed password in db
+    user["password_hash"] = hashed_password
+
+    save_users(users)   #save the db
+
+    return "SUCCESS"      #password is set successfully
+
+#user enters his emp_id, old password, and new password which he wants to replace with the old pasword
+def change_user_password(emp_id: str, old_password: str, new_password: str):
+    users = load_users()      #we load the db
+    emp_id = emp_id.lower()   #lower the emp_id
+
+    user = users.get(emp_id)  #get the details of the given user from db using the emp_id he provided
+
+    # User must exist, if he doesn't, then we return user not found
+    if not user:
+        return "USER_NOT_FOUND"
+
+    # Account lock check, if locked, then user is not allowed to change his password
+    if user["lock_until"] > time.time():
+        return "LOCKED"
+
+    # Password must already be set, if password is not set even one time, then there is nothing to change
+    if not user.get("password_hash"):
+        return "PASSWORD_NOT_SET"
+
+    # Verify old password, we call the verify function, it executes in this file only
+    #it hashes the provided the password and compares it with existing hash, if they match, it returns true, else false
+    #if old password doesn't match, we return wrong password
+    if not verify_password(old_password, user["password_hash"]):
+        return "WRONG_PASSWORD"
+
+    # Hash new password, if verify password returns true
+    new_hash = pwd_context.hash(new_password)
+
+    # Update new password in db
+    user["password_hash"] = new_hash
+
+    #We invalidate the complete session after password change, basically reset session time and tokens
+    user["session_start"] = 0
+    user["refresh_token"] = ""
+    user["refresh_token_expiry"] = 0
+
+    save_users(users)   #save db
+
+    return "SUCCESS"    #password is successfully changed
