@@ -5,8 +5,15 @@ from rag_engine import ask_question          # Your existing RAG function
 from auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
 from auth import create_refresh_token,load_users,save_users 
 import time  #used for session tracking and lock checks
+from dotenv import load_dotenv #loads environment file into the environment
+import os
 
 app = FastAPI()                              # Create FastAPI app
+
+# This reads our .env file and store values into  environment
+load_dotenv()
+
+ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS"))
 
 ALLOWED_ROLES = {"admin", "hr", "engineering", "employee", "marketing", "finance", "c-level"} #List for allowed folders
 
@@ -94,7 +101,7 @@ def refresh(request: RefreshRequest):      #defining refresh api
 # If successful → return new tokens as HTTP response (JSON) to the client(user)'''
     
 @app.post("/ask")  #we click the ask button
-def ask_ai(request: QueryRequest):   #defining the ask endpoint here
+def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provides token and question
     
     # NEW: Verify token and extract payload from JWT, verify function is called here and executes in auth.py file
     payload = verify_token(request.token) #We pass access token as argument, the function returns payload which contains emp_id, role and the expiry date of the token
@@ -111,6 +118,11 @@ def ask_ai(request: QueryRequest):   #defining the ask endpoint here
 
     if not user:  #if user not found, error is raised
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # absolute session expiry check
+    ABSOLUTE_SESSION_EXPIRE_SECONDS = ABSOLUTE_SESSION_EXPIRE_DAYS * 86400
+    if time.time() > user.get("session_start", 0) + ABSOLUTE_SESSION_EXPIRE_SECONDS:
+            raise HTTPException(status_code=401, detail="Session expired. Please login again.")
     
     token_session = payload.get("session_start")
 
@@ -182,6 +194,15 @@ def create_user(request: CreateUserRequest, token: str):
     # Fetch admin's role from DB (NOT JWT)
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
+    
+    #Session binding check, If Admin has logged out, he should not be able to create_new_user
+    token_session = payload.get("session_start")
+    if token_session != user.get("session_start"):
+            raise HTTPException(status_code=401, detail="Session expired. Please login again.")
+
+    # Lock check, If Admin's account is locked, jwt shouldn't be allowed to create new user
+    if user["lock_until"] > time.time():
+           raise HTTPException(status_code=403, detail="Account is locked")
 
     emp_id = request.emp_id.lower()  #converting new emp_id provided by admin of the new user to lowercase
     
@@ -233,6 +254,11 @@ class SetPasswordRequest(BaseModel):
 @app.post("/set-password")
 def set_password(request: SetPasswordRequest, token: str = None):
     from auth import set_user_password, verify_token, load_users
+    
+    #Empty password (like "" or "  ") is not allowed
+    new_password = request.new_password.strip()
+    if not new_password:
+        raise HTTPException(status_code=400, detail="Password cannot be empty")
 
     users = load_users()
     emp_id = request.emp_id.lower()
@@ -243,17 +269,17 @@ def set_password(request: SetPasswordRequest, token: str = None):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 🔥 CASE 1: First-time password setup (no password exists)
+    # CASE 1: First-time password setup (no password exists)
     # we allow this WITHOUT requiring token (onboarding flow)
     if not user.get("password_hash"):
-        result = set_user_password(emp_id, request.new_password)
+        result = set_user_password(emp_id,new_password)
 
         if result == "USER_NOT_FOUND":
             raise HTTPException(status_code=404, detail="User not found")
 
         return {"message": "Password set successfully"}
 
-    # 🔒 CASE 2: Password already exists → require authentication
+    # CASE 2: Password already exists → require authentication
     #we first verify the jwt token provided by user
     if not token:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -285,12 +311,17 @@ class ChangePasswordRequest(BaseModel):
 @app.post("/change-password")
 def change_password(request: ChangePasswordRequest):
     from auth import change_user_password
+    
+    #old password can't be replaced with Empty password 
+    new_password = request.new_password.strip()
+    if not new_password:
+        raise HTTPException(status_code=400, detail="Password cannot be empty")
 
     #if password is correct, success message is returned, else some kind of error message is returned
     result = change_user_password(
         request.emp_id,
         request.old_password,
-        request.new_password
+        new_password
     )
 
     if result == "USER_NOT_FOUND":
