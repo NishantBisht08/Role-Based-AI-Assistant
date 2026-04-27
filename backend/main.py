@@ -3,7 +3,7 @@ from pydantic import BaseModel               # Used to define request body struc
 
 from rag_engine import ask_question          # Your existing RAG function
 from auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
-from auth import create_refresh_token,load_users,save_users 
+from auth import create_refresh_token, get_user, update_user
 import time  #used for session tracking and lock checks
 from dotenv import load_dotenv #loads environment file into the environment
 import os
@@ -48,23 +48,28 @@ def login(request: LoginRequest):
     if not user:   
         raise HTTPException(status_code=401, detail="Invalid emp_id or password")
     
-    #The session clock starts, absolute session is calculated with env variable
-    users=load_users() #We access the users.json file
-    users[request.emp_id.lower()]["session_start"] = time.time() #We first ask for the details of the specific user and then it overwrites the prev session time everytime 
-                                                                   #when we login and starts the session time from fresh login
-    save_users(users)  #write updated dictionary back to users.json
+    #lowering emp_id so that emp101 and EMP101 is same
+    emp_id = request.emp_id.lower()
 
-    session_start = users[request.emp_id.lower()]["session_start"] 
+    user_db = get_user(emp_id)   # fetch user from DB by his emp_id
+    
+    if not user_db:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_db["session_start"] = time.time()   #The session clock starts, it is updated with current time, everytime we login, session time resets
+    update_user(emp_id, user_db)   # save updated data to DB
+
+    session_start = user_db["session_start"]   #session_start variable holds the session start time which we will include in our jwt
      
     # NEW: Create JWT token with emp_id and role inside payload
     access_token = create_access_token({   #We call the auth.py file and it creates access token and returns it to main
-        "sub": request.emp_id.lower(),
+        "sub": emp_id,
         "role": user["role"] ,     
         "session_start": session_start     #adding session_start_time in jwt   
     })
     #we are passing emp_id and his role as parameters to auth file, which creates jwt token and returns it to main in access_token variable
     
-    refresh_token = create_refresh_token(request.emp_id.lower()) #We call creeate_refresh function and  pass the emp_id as parameter to create_refresh function defined in auth file, which creates and returns the refresh token to us
+    refresh_token = create_refresh_token(emp_id) #We call creeate_refresh function and  pass the emp_id as parameter to create_refresh function defined in auth file, which creates and returns the refresh token to us
 
     # Send token back to user, “We send this data as an HTTP response back to the client”
     return { 
@@ -72,6 +77,7 @@ def login(request: LoginRequest):
             "refresh_token": refresh_token,
             "token_type": "bearer"  #Bearer = whoever holds the token is the user                                          It tells the client how to use the token, typically indicating it should be sent as a Bearer token in the Authorization header.
            }
+    
 
 class RefreshRequest(BaseModel):
     refresh_token: str
@@ -113,8 +119,8 @@ def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provi
     emp_id = payload["sub"].lower()  #We store the emp_id of user from the returned payload in the emp_id variable,
 
     # We Load users from database
-    users = load_users()       #this function executes in auth.py and it returns the entire users.json file and we store that in users variable as a dictionary
-    user = users.get(emp_id)  # we use emp_id from payload to fetch user from database, so that we can also fetch the user's role from database 
+   
+    user = get_user(emp_id)   # fetch user from DB using his emp_id
 
     if not user:  #if user not found, error is raised
         raise HTTPException(status_code=404, detail="User not found")
@@ -164,6 +170,7 @@ def logout(request: LogoutRequest):
     return {"message": "Logged out successfully"}
 
 
+
 #End points for admin
 class CreateUserRequest(BaseModel):
     emp_id: str
@@ -173,7 +180,8 @@ class CreateUserRequest(BaseModel):
 # if admin wants to add a new user
 @app.post("/admin/create-user")
 def create_user(request: CreateUserRequest, token: str):
-    from auth import verify_token, load_users, save_users
+    from auth import verify_token
+    from shared_cons import connection_pool
 
     payload = verify_token(token)
 
@@ -181,13 +189,11 @@ def create_user(request: CreateUserRequest, token: str):
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    users = load_users()
-
     #  Extract admin's identity(emp_id which is admin) from JWT
     emp_id_from_token = payload["sub"].lower()
 
     #now we are checking the db to ensure if this emp_id (that we extracted from jwt) exist or not in db
-    user = users.get(emp_id_from_token)  #so user contains all the fields of emp_id=admin in db
+    user = get_user(emp_id_from_token)  #so user contains all the fields of emp_id=admin in db
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -213,7 +219,8 @@ def create_user(request: CreateUserRequest, token: str):
         raise HTTPException(status_code=400, detail="Name cannot be empty")
 
     # Check if emp_id already exists in db
-    if emp_id in users:
+    existing_user = get_user(emp_id)
+    if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
 
     #getting the new user's role from admin
@@ -227,22 +234,38 @@ def create_user(request: CreateUserRequest, token: str):
         raise HTTPException(status_code=403, detail="Cannot create admin users")
 
     # Create new user WITHOUT password
-    users[emp_id] = {
-        "name":name,
-        "password_hash": "",
-        "role": role,               #storing validated role
-        "failed_attempts": 0,
-        "lock_until": 0,
-        "lock_count": 0,
-        "last_failed_login": 0,
-        "refresh_token": "",
-        "refresh_token_expiry": 0,
-        "session_start": 0
-    }
+    conn = connection_pool.getconn()
+    try:
+        cur = conn.cursor()
 
-    save_users(users)        #saving new user to db
+        cur.execute("""
+            INSERT INTO users (
+                emp_id, name, password_hash, role,
+                failed_attempts, lock_until, lock_count,
+                last_failed_login, refresh_token,
+                refresh_token_expiry, session_start
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            emp_id,
+            name,
+            "",
+            role,
+            0,
+            0,
+            0,
+            0,
+            "",
+            0,
+            0
+        ))
+
+        conn.commit()
+        cur.close()
+    finally:
+        connection_pool.putconn(conn)
 
     return {"message": f"User {emp_id} created successfully"}
+
 
 
 #allowing user to set password only if user exists and password is currently empty
@@ -253,17 +276,16 @@ class SetPasswordRequest(BaseModel):
 #user enters his emp_id and new_password to set
 @app.post("/set-password")
 def set_password(request: SetPasswordRequest, token: str = None):
-    from auth import set_user_password, verify_token, load_users
+    from auth import set_user_password, verify_token
     
     #Empty password (like "" or "  ") is not allowed
     new_password = request.new_password.strip()
     if not new_password:
         raise HTTPException(status_code=400, detail="Password cannot be empty")
 
-    users = load_users()
     emp_id = request.emp_id.lower()
 
-    user = users.get(emp_id)
+    user = get_user(emp_id)
 
     #if user does not exist, we throw error
     if not user:
