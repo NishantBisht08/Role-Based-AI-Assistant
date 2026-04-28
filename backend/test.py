@@ -40,7 +40,7 @@ while True:
     #   → load_documents() with metadata prefix (collision fix)
     #   → MMR search (diversity across quarters)
     #   → Groq LLaMA answer generation
-    result = ask_question(role, query, debug=True)
+    result = ask_question(role, query)
 
     print("\n" + "-"*55)
     print("ANSWER:\n")

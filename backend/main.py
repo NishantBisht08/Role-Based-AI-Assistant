@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException   # FastAPI framework, HTTPException for error responses
 from pydantic import BaseModel               # Used to define request body structure (JSON input)
 
@@ -5,8 +6,17 @@ from rag_engine import ask_question          # Your existing RAG function
 from auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
 from auth import create_refresh_token,load_users,save_users 
 import time
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI()                              # Create FastAPI app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow all (for development)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # NEW: Model for login request body
@@ -54,10 +64,11 @@ def login(request: LoginRequest):
 
     # Send token back to user
     return { 
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
-           }
+    "access_token": access_token,
+    "refresh_token": refresh_token,
+    "token_type": "bearer",
+    "role": user["role"]  # ADD THIS
+}
 
 class RefreshRequest(BaseModel):
     refresh_token: str

@@ -15,6 +15,9 @@ import shutil    # for deleting folders when we need to rebuild ChromaDB
 
 # Loads environment variables from .env file (e.g. GROQ_API_KEY)
 from dotenv import load_dotenv
+load_dotenv()
+
+print("KEY CHECK:", os.getenv("GROQ_API_KEY"))
 
 # LangChain loaders — each one knows how to read a different file type
 from langchain_community.document_loaders import (

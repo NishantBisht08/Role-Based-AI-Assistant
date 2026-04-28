@@ -1,0 +1,53 @@
+{
+  "conversations": {
+    "khushi::engineering": [
+      {
+        "chat_id": "chat_1777303743903_jxu4n",
+        "title": "what is the role of engineer ?",
+        "messages": [
+          {
+            "role": "user",
+            "text": "what is the role of engineer ?"
+          },
+          {
+            "role": "ai",
+            "text": "The role of an engineer at FinSolve Technologies includes ensuring technical excellence and architectural consistency. Engineers are part of the Development Team, which self-organizes to deliver sprint commitments. Additionally, there are specific roles such as the Technical Lead, who oversees the technical aspects, and engineers are also involved in various stages of the software development lifecycle, including design, development, testing, and deployment.",
+            "sources": [
+              "engineering_master_doc.md"
+            ]
+          },
+          {
+            "role": "user",
+            "text": "can engineer access hr details ?"
+          },
+          {
+            "role": "ai",
+            "text": "I do not have access to that information.",
+            "sources": [
+              "engineering_master_doc.md"
+            ]
+          }
+        ],
+        "updated_at": 1777303943
+      },
+      {
+        "chat_id": "chat_1777303959737_2yalv",
+        "title": "What are my top priorities this week?",
+        "messages": [
+          {
+            "role": "user",
+            "text": "What are my top priorities this week?"
+          },
+          {
+            "role": "ai",
+            "text": "I do not have access to that information.",
+            "sources": [
+              "engineering_master_doc.md"
+            ]
+          }
+        ],
+        "updated_at": 1777303970
+      }
+    ]
+  }
+}
