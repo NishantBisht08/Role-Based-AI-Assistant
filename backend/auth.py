@@ -42,17 +42,17 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 def get_user(emp_id):
     
-    conn = connection_pool.getconn()
+    conn = connection_pool.getconn()    #reusing an existing db connection
     
     try:
         cur = conn.cursor()
         cur.execute("SELECT * FROM users WHERE emp_id = %s", (emp_id,))  #executes sql queries and can be used to fetch their results in tuple format
-        row = cur.fetchone()
-        cur.close()
+        row = cur.fetchone()   #fetch one row, since emp_id is unique, we fetch one row(all his details are in that row)
+        cur.close()  #close cursor, returns connection to pool
     finally:
         connection_pool.putconn(conn)
 
-    if not row:
+    if not row:      #if user not found
         return None
     
     #returns data again in json format
@@ -115,7 +115,7 @@ def update_user(emp_id, user):
         cur.close()
 
     finally:
-        connection_pool.putconn(conn)
+        connection_pool.putconn(conn)  #returns connection to pool and prevents leaks
 
 
 

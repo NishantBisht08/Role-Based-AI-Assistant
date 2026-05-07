@@ -104,7 +104,7 @@ def refresh(request: RefreshRequest):      #defining refresh api
 # The function returns the new tokens back to main.py
 
 # If validation fails → raise HTTPException (401 Unauthorized)
-# If successful → return new tokens as HTTP response (JSON) to the client(user)'''
+# If successful → return new tokens as HTTP response (JSON) to the client(user)''' 
     
 @app.post("/ask")  #we click the ask button
 def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provides token and question

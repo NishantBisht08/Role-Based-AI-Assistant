@@ -17,6 +17,17 @@ import shutil    # for deleting folders when we need to rebuild ChromaDB
 from dotenv import load_dotenv
 
 # LangChain loaders — each one knows how to read a different file type
+"""What are loaders?
+
+loaders are objects provided by LangChain that are used to read different file types
+
+ What they actually do
+
+A loader:
+
+opens the file
+reads its content
+converts it into a standard format"""
 from langchain_community.document_loaders import (
     TextLoader,      # reads .md and .txt files
     CSVLoader,       # reads .csv files (like hr_data.csv)
@@ -76,6 +87,7 @@ for _role, _folders in ROLE_FOLDERS.items():
 
 def enforce_rbac(role: str) -> tuple:
     # Layer 1: basic checks
+    
     # isinstance() checks if role is actually a string (not None or a number)
     if not isinstance(role, str) or role.strip() == "":
         return False, "Role must be a non-empty string."
@@ -87,7 +99,7 @@ def enforce_rbac(role: str) -> tuple:
     if role_clean not in VALID_ROLES:
         return False, f"Access denied: '{role_clean}' is not a recognised role. Valid roles: {sorted(VALID_ROLES)}."
 
-    # Layer 2: escalation check
+    # Layer 2: escalation check (THis is the reverse mapping check, basically a Double check)
     # Even if role is valid, verify it's actually allowed in each folder it claims
     # This prevents someone from sneaking extra folder access at runtime
     for folder in ROLE_FOLDERS.get(role_clean, []):
@@ -107,33 +119,36 @@ def enforce_rbac(role: str) -> tuple:
 _embedding_model = None  # starts as None, gets filled on first use
 
 def get_embedding_model():
-    global _embedding_model
+    global _embedding_model        #global variable, will be used throughout the file
     if _embedding_model is None:
-        # Load the model from HuggingFace (only happens once)
+        # Load the model from HuggingFace (only happens once, after that same model is used for all users regardless of their roles)
         _embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     return _embedding_model
 
 
 # ── Step 4: Detect if data files have changed ─────────────────────────────────
-# We create a fingerprint (hash) of all files in the role's folders.
+# We create a fingerprint (hash) of all files (meta data of each file: file_name, last modified, etc.) in the role's folders.
 # If any file is added, edited, or deleted — the hash changes.
 # This tells us to rebuild ChromaDB instead of using the old stale one.
 
-def compute_folder_hash(folders: list, base_path: str) -> str:
-    hasher = hashlib.md5()  # MD5 creates a 32-character fingerprint string
+#-> str is basically hinting that this function is returning string, it is not necessary but good for readability
+def compute_folder_hash(folders: list, base_path: str) -> str:      #(takes a list of folder names and its base path as input)
+    hasher = hashlib.md5()  # We create an md5 object, MD5 creates a 32-character fingerprint string, it is an empty finger printing machine as we keep feeding it data, it will build a fingerprint
 
-    for folder in sorted(folders):  # sorted = consistent order every time
-        folder_path = os.path.join(base_path, folder)
-        if not os.path.exists(folder_path):
+    #we iterate the folders
+    for folder in sorted(folders):  # sorted = consistent order every time, if not sorted, hash may change even though data is same
+        folder_path = os.path.join(base_path, folder)  #build full folder path
+        if not os.path.exists(folder_path):            #if folder path doesn't exist, we continue(skip it)
             continue
 
+        #iterate files in the sorted order
         for fname in sorted(os.listdir(folder_path)):  # sorted = consistent order
-            fpath = os.path.join(folder_path, fname)
-            stat = os.stat(fpath)  # get file info without opening the file
+            fpath = os.path.join(folder_path, fname) #builds full file path
+            stat = os.stat(fpath)  # get file info without opening the file like file size and last modified time
             # Include filename + last modified time + file size in the hash
-            hasher.update(f"{fname}{stat.st_mtime}{stat.st_size}".encode())
+            hasher.update(f"{fname}{stat.st_mtime}{stat.st_size}".encode()) # a string is created which is then converted to bytes (required by hash)cuz of encode
 
-    return hasher.hexdigest()  # returns something like "a3f8c2d19e4b..."
+    return hasher.hexdigest()  # returns something like "a3f8c2d19e4b...", converts raw bytes into a readable hexadecimal string format, cuz later we need to store it in a file and strings are easy to store, comapre and print
 
 
 # ── Step 5: Extract quarter and year from filename ────────────────────────────
@@ -141,15 +156,16 @@ def compute_folder_hash(folders: list, base_path: str) -> str:
 # Example: "marketing_report_q1_2024.md" → quarter="Q1", year="2024"
 # This is important for the semantic collision fix — see Step 6 for why.
 
-def extract_file_tags(fname: str) -> dict:
+#it takes file name as input
+def extract_file_tags(fname: str) -> dict:  #we return dictionary, cuz key is meta data type and value is that type's value
     
     # 1. Clean up the filename manually (No Regex needed for this!)
-    name = fname.lower()
-    name = name.replace(".md", "").replace(".csv", "").replace(".pdf", "").replace(".docx", "").replace(".txt", "")
-    name = name.replace("_", " ").replace("-", " ")
-    name = name.strip()
+    name = fname.lower() #lowercasing file name
+    name = name.replace(".md", "").replace(".csv", "").replace(".pdf", "").replace(".docx", "").replace(".txt", "") #removing all extensions from file name
+    name = name.replace("_", " ").replace("-", " ")  #"q1_2024-report" → "q1 2024 report"
+    name = name.strip() #removing spaces
 
-    # 2. Set default values just in case we don't find anything
+    # 2. Set default values just in case we don't find anything(q1,q2 etc.) in the file names
     final_quarter = "annual"
     final_year = ""
 
@@ -166,22 +182,31 @@ def extract_file_tags(fname: str) -> dict:
     # 4. Check for the year (Looking for 2020 through 2029)
     # split() turns "marketing report 2024" into ["marketing", "report", "2024"]
     words_in_name = name.split() 
-    for word in words_in_name:
-        if word.startswith("202") and len(word) == 4:
-            final_year = word
+    for word in words_in_name:                         #we check each word one by one
+        if word.startswith("202") and len(word) == 4:  #year needs to be above 2019 and should have 4 characters
+            final_year = word     #example: final year=2024
             break # Stop looking once we find the year
 
     # 5. Return the clean, easy-to-read dictionary
+    #    this can be the result for a file like marketing_report_q1_2024.md
     return {
         "quarter": final_quarter,
         "year": final_year,
         "doc_type": name
-    }
+    }                              
 
 
 # ── Step 6: Load documents from allowed folders ───────────────────────────────
+
+'''Load files → extract metadata → attach metadata → prepare for embedding
+
+This function's main job is:
+Inject context BEFORE embedding
+
+'''
+
 # This function reads all files from the role's allowed folders.
-# KEY FIX: We prepend a metadata header to every chunk BEFORE embedding.
+# KEY FIX: We attach a metadata header to every chunk BEFORE embedding.
 #
 # Why? Because Q1 and Q4 financial reports talk about the same topics
 # (revenue, vendor costs, gross margin). The embedding model sees them
@@ -191,24 +216,29 @@ def extract_file_tags(fname: str) -> dict:
 # every chunk. Now the embedding encodes WHICH quarter it belongs to,
 # making Q1 and Q4 vectors genuinely different.
 
-def load_documents(folders: list, base_path: str) -> list:
-    documents = []
+def load_documents(folders: list, base_path: str) -> list:   #we take the folders and their paths as input, output would be a list of documents
+    documents = []           #this will store all the loaded documents
 
-    for folder in folders:
-        folder_path = os.path.join(base_path, folder)
+    #we loop through folders, example: folders --> "finance", "hr", "marketing"
+    for folder in folders:                              
+        folder_path = os.path.join(base_path, folder)    #we build the full folder path and store it in this variable
 
-        # Skip if folder doesn't exist
+        # Skip if folder doesn't exist, 
         if not os.path.exists(folder_path):
             print(f"[WARNING] Folder not found: {folder_path}")
-            continue
-
-        for fname in os.listdir(folder_path):
-            fpath = os.path.join(folder_path, fname)
+            continue      #we go to  next iteration of for loop
+ 
+        for fname in os.listdir(folder_path):           #we loop through files present in those folders
+            fpath = os.path.join(folder_path, fname)    #we build and store the file path
 
             try:
-                # Pick the right loader based on file extension
+                # Pick the right loader based on file extension, we imported these loaders during the very top of this file
                 if fname.endswith(".md") or fname.endswith(".txt"):
-                    loader = TextLoader(fpath, encoding="utf-8")
+                    loader = TextLoader(fpath, encoding="utf-8")   #loader = reader for this file
+                    '''This line means:
+                      1. file path stored
+                      2. encoding set
+                      3. ready to read but file is not read yet'''
                 elif fname.endswith(".csv"):
                     loader = CSVLoader(fpath, encoding="utf-8")
                 elif fname.endswith(".pdf"):
@@ -218,34 +248,46 @@ def load_documents(folders: list, base_path: str) -> list:
                 else:
                     continue  # skip unsupported files silently
 
-                # Load the file — returns a list of Document objects
+                '''TextLoader(...) → like opening a book reader app
+                   loader.load()   → actually reading the book'''
+                # This line Loads the file ,reads content and converts to Document objects
+                '''A Document object is just a structured container for text + metadata
+                Document
+                  ├── page_content → actual text
+                  └── metadata     → extra info'''
                 docs = loader.load()
 
-                # Get quarter/year/doc_type from the filename
+                # Get quarter/year/doc_type from the filename, we call the function defined in step5 and it returns us a dictionary of file's meta data
                 tags = extract_file_tags(fname)
-                period = f"{tags['quarter']} {tags['year']}".strip()
+                period = f"{tags['quarter']} {tags['year']}".strip()  #we extract the quarter and year from the tags dictionary cuz we need a clean, readable label for embedding, example: [Document: marketing_report_q1_2024.md], [Period: Q1 2024]
 
                 # Build the metadata header that goes at the top of every chunk
+                '''Example header:
+                       [Document: marketing_report_q1_2024.md]
+                       [Period: Q1 2024]
+                '''
                 header = f"[Document: {fname}] [Type: {tags['doc_type']}] [Period: {period}]\n\n"
 
                 for doc in docs:
-                    # Save metadata so we can show sources in the answer
+                    # Save metadata so we can show sources in the answer, we attach extra information to the document
                     doc.metadata["source"]   = fname
                     doc.metadata["folder"]   = folder
                     doc.metadata["quarter"]  = tags["quarter"]
                     doc.metadata["year"]     = tags["year"]
                     doc.metadata["doc_type"] = tags["doc_type"]
 
-                    # Prepend header to chunk text — this is the collision fix
+                    # attach header to chunk text — this is the collision fix
+                    #We modify the actual text to include the header with it
+                    # this text will go into embedding model-->vector
                     doc.page_content = header + doc.page_content
 
-                documents.extend(docs)
+                documents.extend(docs)  #we add all the processed documents into one document list
 
             except Exception as e:
-                # If one file fails, skip it and continue with the rest
-                print(f"[ERROR] Could not load {fpath}: {e}")
+                # If one file fails, skip it and continue with the rest, next iteration of this for loop
+                print(f"[ERROR] Could not load {fpath}: {e}") # e has the actual message of error
 
-    return documents
+    return documents # we return the list of documents that will now go into embedding model
 
 
 # ── Step 7: Build or load ChromaDB ────────────────────────────────────────────
@@ -255,13 +297,14 @@ def load_documents(folders: list, base_path: str) -> list:
 #   - If data files haven't changed → load existing DB (fast)
 #   - If data files changed → wipe old DB and rebuild (accurate)
 
+#this function will return a chroma vector db object, it takes role, folders allocated for the role and the file path as input
 def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma:
-    embedding   = get_embedding_model()
-    persist_dir = f"./chroma_db_{role}"  # e.g. chroma_db_finance, chroma_db_hr
+    embedding   = get_embedding_model()  # we call the embedding model that we defined in step3 and store it in embedding variable, we reuse the model if it already has been loaded 
+    persist_dir = f"./chroma_db_{role}"  # e.g. chroma_db_finance, chroma_db_hr, it is the place where vectors are stored
     hash_file   = f"{persist_dir}/.hash" # where we save the fingerprint
-    current_hash = compute_folder_hash(folders, base_path)
+    current_hash = compute_folder_hash(folders, base_path)   #finger print of current data
 
-    needs_rebuild = True  # default: assume we need to rebuild
+    needs_rebuild = True  # Our default assumption is rebuild is neeeded
 
     # Check if DB already exists AND fingerprint matches current files
     if os.path.exists(persist_dir) and os.path.exists(hash_file):
@@ -269,11 +312,11 @@ def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma
             saved_hash = f.read().strip()
         if saved_hash == current_hash:
             needs_rebuild = False  # files unchanged — safe to load existing DB
-
-    if needs_rebuild:
+ 
+    if needs_rebuild:   #if rebuild =true
         print(f"[INFO] Building ChromaDB for role: {role}")
 
-        # Load all documents from allowed folders
+        # Load all documents from allowed folders(along with header for each document)
         documents = load_documents(folders, base_path)
 
         if not documents:
@@ -281,6 +324,7 @@ def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma
 
         # Split documents into chunks of 2000 characters with 200 overlap
         # Overlap ensures sentences at chunk boundaries aren't cut in half
+        # header gets copied to every chunk
         chunks = RecursiveCharacterTextSplitter(
             chunk_size=2000,
             chunk_overlap=200
@@ -291,19 +335,24 @@ def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma
             shutil.rmtree(persist_dir)
 
         # Create new ChromaDB — converts chunks to vectors and saves to disk
+        '''this line below does 3 things internally:
+
+              1. Takes chunks (text)
+              2. Converts them into vectors (embeddings)
+              3. Stores them on disk  '''
         db = Chroma.from_documents(chunks, embedding, persist_directory=persist_dir)
 
         # Save fingerprint so next run can detect if files changed
-        os.makedirs(persist_dir, exist_ok=True)
-        with open(hash_file, "w") as f:
+        os.makedirs(persist_dir, exist_ok=True) #ensures that folders exist
+        with open(hash_file, "w") as f:    #opens the hash file and writes the current hash
             f.write(current_hash)
 
-    else:
+    else:   #if rebuild = false
         print(f"[INFO] Loading existing ChromaDB for role: {role}")
         # Load existing DB from disk — much faster than rebuilding
-        db = Chroma(persist_directory=persist_dir, embedding_function=embedding)
+        db = Chroma(persist_directory=persist_dir, embedding_function=embedding) #1st parameter: loading db from this folder o disk, 2nd paramter is the embedding model
 
-    return db
+    return db #“The db variable represents a Chroma vector database object. It encapsulates access to the stored embeddings on disk and provides methods for performing similarity search using the embedding function.”
 
 
 # ── Step 8: Main function — tie everything together ───────────────────────────
@@ -311,12 +360,13 @@ def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma
 # It runs the full RAG pipeline:
 #   Check role → Get DB → Search docs → Build prompt → Get answer
 
+#it takes a question and role as input and returns a dictionary as answer
 def ask_question(role: str, query: str) -> dict:
 
     BASE_PATH = "../data"  # where all the data folders live
 
     # --- 1. Check if the role is valid ---
-    is_valid, error_msg = enforce_rbac(role)
+    is_valid, error_msg = enforce_rbac(role)   #We call function defined in step2
     if not is_valid:
         # Return error immediately — no DB or LLM work wasted
         return {"answer": error_msg, "sources": []}
@@ -329,7 +379,7 @@ def ask_question(role: str, query: str) -> dict:
 
     # --- 2. Get the ChromaDB for this role ---
     try:
-        db = get_or_build_vectorstore(role, allowed_folders, BASE_PATH)
+        db = get_or_build_vectorstore(role, allowed_folders, BASE_PATH) #we call function defined in step7
     except ValueError as e:
         return {"answer": str(e), "sources": []}
 
@@ -338,35 +388,48 @@ def ask_question(role: str, query: str) -> dict:
     # fetch_k=30: first fetch 30 similar chunks
     # k=10: then pick the 10 most DIVERSE ones from those 30
     # This prevents getting 10 chunks all from the same document
+    
     retrieved_docs = db.max_marginal_relevance_search(query, k=10, fetch_k=30)
 
+    # lert's say a hr user asks a question regarding engineering, no relevant chunks would be loaded, so we make it return I don't have access to prevent hallucination 
     if not retrieved_docs:
         return {"answer": "I do not have access to that information.", "sources": []}
 
     # --- 4. Build context from retrieved chunks ---
     # Join all chunks into one big string with source labels
     # Example: "[Source: quarterly_financial_report.md]\n...content..."
+    
         # 1. Create an empty list to hold our formatted chunks
     formatted_chunks = []
 
-    # 2. Loop through the documents normally
+    # 2. Loop through the documents, which we retrieved after applying mmr 
     for doc in retrieved_docs:
         
         # 3. Get the filename safely
         filename = doc.metadata.get('source', 'unknown')
         
         # 4. Format the text block
+        ''' 
+               [Source: marketing_report_q1_2024.md]
+               [Document: ...]
+               [Period: Q1 2024]
+
+               Revenue increased by 10%...
+               
+             we add source so llm can cite sources, stay grounded, answer with traceability
+        '''
         text_block = f"[Source: {filename}]\n{doc.page_content}"
         
         # 5. Add it to our list
         formatted_chunks.append(text_block)
 
-    # 6. Glue the whole list together using our visual divider
+    # 6.  Combine list into one context to provide to llm
     context = "\n\n---\n\n".join(formatted_chunks)
 
+    '''From many chunks → extract unique filenames → return clean list'''
     # Get unique source filenames for the response
     # 1. Create an empty list to hold our source filenames
-    sources = []
+    sources = [] #it will hold file names
 
     # 2. Loop through our 10 relevant document chunks
     for doc in retrieved_docs:
@@ -380,6 +443,10 @@ def ask_question(role: str, query: str) -> dict:
             sources.append(filename)
 
     # 6. Alphabetize the final list so it looks nice for the user
+    '''Final output is:
+            ["finance_q1.md", "marketing_q4.md"]
+            Cleaner for UI / API response'''
+            
     sources.sort()
 
     # --- 5. Build the prompt and call LLaMA ---
