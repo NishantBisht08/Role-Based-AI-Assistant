@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException   # FastAPI framework, HTTPException for error responses
 from pydantic import BaseModel               # Used to define request body structure (JSON input)
 
-from rag_engine import ask_question          # Your existing RAG function
-from auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
-from auth import create_refresh_token,load_users,save_users 
+from backend.rag_engine import ask_question          # Your existing RAG function
+from backend.auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
+from backend.auth import create_refresh_token,load_users,save_users 
 import time  #used for session tracking and lock checks
 
 app = FastAPI()                              # Create FastAPI app
@@ -66,7 +66,7 @@ class RefreshRequest(BaseModel):
     
 @app.post("/refresh")   # called when frontend requests token refresh 
 def refresh(request: RefreshRequest):      #defining refresh api
-    from auth import refresh_access_token
+    from backend.auth import refresh_access_token
     tokens = refresh_access_token(request.refresh_token)
 
     if not tokens:

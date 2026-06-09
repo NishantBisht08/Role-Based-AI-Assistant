@@ -36,8 +36,9 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 # Groq client — used to call the LLaMA model for generating answers
 from groq import Groq
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Load the .env file so we can use os.getenv("GROQ_API_KEY") later
-load_dotenv()
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 
 # ── Step 1: Define who can access what ────────────────────────────────────────
@@ -257,7 +258,7 @@ def load_documents(folders: list, base_path: str) -> list:
 
 def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma:
     embedding   = get_embedding_model()
-    persist_dir = f"./chroma_db_{role}"  # e.g. chroma_db_finance, chroma_db_hr
+    persist_dir = os.path.join(BASE_DIR, f"chroma_db_{role}")  # e.g. chroma_db_finance, chroma_db_hr
     hash_file   = f"{persist_dir}/.hash" # where we save the fingerprint
     current_hash = compute_folder_hash(folders, base_path)
 
@@ -311,9 +312,9 @@ def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma
 # It runs the full RAG pipeline:
 #   Check role → Get DB → Search docs → Build prompt → Get answer
 
-def ask_question(role: str, query: str) -> dict:
+def ask_question(role: str, query: str, debug: bool = False) -> dict:
 
-    BASE_PATH = "../data"  # where all the data folders live
+    BASE_PATH = os.path.join(BASE_DIR, "..", "data")  # where all the data folders live
 
     # --- 1. Check if the role is valid ---
     is_valid, error_msg = enforce_rbac(role)
