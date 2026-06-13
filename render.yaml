@@ -22,10 +22,6 @@ services:
         value: /data
       - key: PYTHON_VERSION
         value: 3.11.0
-    disk:
-      name: chroma-data
-      mountPath: /data
-      sizeGB: 1
 
   # 3. Streamlit Frontend
   - type: web
