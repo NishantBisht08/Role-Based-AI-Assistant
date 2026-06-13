@@ -11,7 +11,7 @@ def test_quarter_data():
     
     # Login as sid (Finance)
     print("[*] Logging in as 'sid' (Finance)...")
-    res = requests.post(f"{BASE_URL}/login", json={"username": "sid", "password": "sid123"})
+    res = requests.post(f"{BASE_URL}/login", json={"emp_id": "sid", "password": "sid123"})
     if res.status_code != 200:
         print(f"Login failed: {res.text}")
         return

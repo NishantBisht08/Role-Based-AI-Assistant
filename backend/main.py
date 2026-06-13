@@ -181,7 +181,7 @@ class CreateUserRequest(BaseModel):
 @app.post("/admin/create-user")
 def create_user(request: CreateUserRequest, token: str):
     from backend.auth import verify_token
-    from shared_cons import connection_pool
+    from backend.shared_cons import connection_pool
 
     payload = verify_token(token)
 

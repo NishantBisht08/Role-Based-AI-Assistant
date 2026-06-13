@@ -1,4 +1,4 @@
-from shared_cons import connection_pool            #importing the connection_pool module from shared_cons.py file
+from backend.shared_cons import connection_pool            #importing the connection_pool module from shared_cons.py file
 import os #used for reading environment variables
 from datetime import datetime, timedelta, timezone  #used for creating expiry times for jwt
 import time #The time module is used to get the current Unix timestamp (seconds since 1970 UTC), which is used for session tracking, account lock timing, token expiry, and security checks

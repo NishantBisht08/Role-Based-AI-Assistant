@@ -5,7 +5,10 @@ import base64
 from datetime import datetime, timezone
 
 # ── Configuration ──
-BACKEND_URL = "http://127.0.0.1:8000"
+import os
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8000")
+if not BACKEND_URL.startswith("http"):
+    BACKEND_URL = f"https://{BACKEND_URL}"
 
 st.set_page_config(
     page_title="FinSolve Enterprise AI",
@@ -78,7 +81,7 @@ def login(username, password):
     try:
         response = requests.post(
             f"{BACKEND_URL}/login", 
-            json={"username": username, "password": password}
+            json={"emp_id": username, "password": password}
         )
         if response.status_code == 200:
             data = response.json()
@@ -158,7 +161,7 @@ if not st.session_state["access_token"]:
     with col2:
         with st.form("login_form"):
             st.subheader("Sign In")
-            username = st.text_input("Username")
+            username = st.text_input("Employee ID")
             password = st.text_input("Password", type="password")
             submit = st.form_submit_button("Authenticate")
             

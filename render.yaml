@@ -1,0 +1,48 @@
+services:
+  # 1. PostgreSQL Database
+  - type: psql
+    name: rbac-db
+    plan: free
+
+  # 2. FastAPI Backend
+  - type: web
+    name: finsolve-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python init_db.py && uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rbac-db
+          property: connectionString
+      - key: DATA_DIR
+        value: /data
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    disk:
+      name: chroma-data
+      mountPath: /data
+      sizeGB: 1
+
+  # 3. Streamlit Frontend
+  - type: web
+    name: finsolve-frontend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run frontend/frontend_app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: finsolve-backend
+          property: host
+        # Format the host into a full URL
+        # The host property returns just the domain (e.g. backend.onrender.com)
+        # So we need to prepend https:// when using it in the app, but Streamlit expects full URL
+        # Actually, let's just construct it directly or modify frontend to add https://
+        # Render provides RENDER_EXTERNAL_URL in the backend service, which we can't easily pass here directly via render.yaml
+        # So we just pass the host, and we'll update frontend_app.py to add "https://" if it doesn't start with http
+      - key: PYTHON_VERSION
+        value: 3.11.0

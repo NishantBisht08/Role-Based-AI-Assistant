@@ -28,7 +28,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma:
     embedding   = get_embedding_model()
-    persist_dir = os.path.join(BASE_DIR, "..", f"chroma_db_{role}")  # e.g. chroma_db_finance, chroma_db_hr
+    DATA_DIR = os.environ.get("DATA_DIR", os.path.join(BASE_DIR, ".."))
+    persist_dir = os.path.join(DATA_DIR, f"chroma_db_{role}")  # e.g. chroma_db_finance, chroma_db_hr
     hash_file   = f"{persist_dir}/.hash" # where we save the fingerprint
     current_hash = compute_folder_hash(folders, base_path)
 
