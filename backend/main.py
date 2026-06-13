@@ -13,7 +13,7 @@ app = FastAPI()                              # Create FastAPI app
 # This reads our .env file and store values into  environment
 load_dotenv()
 
-ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS"))
+ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS", "30"))
 
 ALLOWED_ROLES = {"admin", "hr", "engineering", "employee", "marketing", "finance", "c-level"} #List for allowed folders
 
