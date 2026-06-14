@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 # ── Configuration ──
 import os
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8000")
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8000").strip().rstrip("/")
 if not BACKEND_URL.startswith("http"):
     BACKEND_URL = f"https://{BACKEND_URL}"
 
@@ -91,7 +91,11 @@ def login(username, password):
             st.session_state["messages"] = []
             return True, "Login successful"
         else:
-            return False, response.json().get("detail", "Login failed")
+            try:
+                error_detail = response.json().get("detail", "Login failed")
+            except Exception:
+                error_detail = f"Server returned {response.status_code} Error (Not JSON). Please check backend logs."
+            return False, error_detail
     except Exception as e:
         return False, f"Connection error: Make sure the FastAPI backend is running. ({e})"
 
