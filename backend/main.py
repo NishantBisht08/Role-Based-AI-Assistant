@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException   # FastAPI framework, HTTPException for error responses
 from pydantic import BaseModel               # Used to define request body structure (JSON input)
 
-from rag_engine import ask_question          # Your existing RAG function
-from auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
-from auth import create_refresh_token, get_user, update_user
+from backend.rag_engine import ask_question          # Your existing RAG function
+from backend.auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
+from backend.auth import create_refresh_token, get_user, update_user
 import time  #used for session tracking and lock checks
 from dotenv import load_dotenv #loads environment file into the environment
 import os
@@ -13,7 +13,7 @@ app = FastAPI()                              # Create FastAPI app
 # This reads our .env file and store values into  environment
 load_dotenv()
 
-ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS"))
+ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS", "30"))
 
 ALLOWED_ROLES = {"admin", "hr", "engineering", "employee", "marketing", "finance", "c-level"} #List for allowed folders
 
@@ -71,7 +71,7 @@ def login(request: LoginRequest):
     
     refresh_token = create_refresh_token(emp_id) #We call creeate_refresh function and  pass the emp_id as parameter to create_refresh function defined in auth file, which creates and returns the refresh token to us
 
-    # Send token back to user, “We send this data as an HTTP response back to the client”
+    # Send token back to user, "We send this data as an HTTP response back to the client"
     return { 
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -84,7 +84,7 @@ class RefreshRequest(BaseModel):
     
 @app.post("/refresh")   # called when frontend requests token refresh 
 def refresh(request: RefreshRequest):      #defining refresh api
-    from auth import refresh_access_token
+    from backend.auth import refresh_access_token
     tokens = refresh_access_token(request.refresh_token)
 
     if not tokens:
@@ -156,7 +156,7 @@ class LogoutRequest(BaseModel):
 #When logout endpoint is called
 @app.post("/logout")
 def logout(request: LogoutRequest):
-    from auth import logout_user
+    from backend.auth import logout_user
 
     #we call the logout function and it executes in auth.py
     #on successful logout, true is returned and on unsuccessful logout, false is returned, and we store it in result
@@ -180,8 +180,8 @@ class CreateUserRequest(BaseModel):
 # if admin wants to add a new user
 @app.post("/admin/create-user")
 def create_user(request: CreateUserRequest, token: str):
-    from auth import verify_token
-    from shared_cons import connection_pool
+    from backend.auth import verify_token
+    from backend.shared_cons import connection_pool
 
     payload = verify_token(token)
 
@@ -276,7 +276,7 @@ class SetPasswordRequest(BaseModel):
 #user enters his emp_id and new_password to set
 @app.post("/set-password")
 def set_password(request: SetPasswordRequest, token: str = None):
-    from auth import set_user_password, verify_token
+    from backend.auth import set_user_password, verify_token
     
     #Empty password (like "" or "  ") is not allowed
     new_password = request.new_password.strip()
@@ -332,7 +332,7 @@ class ChangePasswordRequest(BaseModel):
 #user enters his emp_id, old password to verify and the new password he wants to replace the old password with
 @app.post("/change-password")
 def change_password(request: ChangePasswordRequest):
-    from auth import change_user_password
+    from backend.auth import change_user_password
     
     #old password can't be replaced with Empty password 
     new_password = request.new_password.strip()
