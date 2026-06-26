@@ -1,8 +1,9 @@
  To run the fastapi server:
 
- cd backend, becuz main.py file and other files are in backend folder
+ cd backend, becuz main.py file and other files are in backend folder and you can't run it directly from backend folder 
+ becuz imports in main.py mention backend folder as an import (ex: import backend.auth {.....})
 
- on terminal, type: python -m uvicorn main:app --reload
+ on terminal, type: python -m uvicorn backend.main:app --reload
 
 http://127.0.0.1:8000/docs on browser
 

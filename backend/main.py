@@ -1,21 +1,31 @@
 from fastapi import FastAPI, HTTPException   # FastAPI framework, HTTPException for error responses
 from pydantic import BaseModel               # Used to define request body structure (JSON input)
 
-from backend.rag_engine import ask_question          # Your existing RAG function
-from backend.auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
-from backend.auth import create_refresh_token, get_user, update_user
 import time  #used for session tracking and lock checks
-from dotenv import load_dotenv #loads environment file into the environment
-import os
+
+from backend.rag_engine import ask_question          # Your existing RAG function
+from backend.shared_cons import connection_pool
+
+from backend.auth import (           #importing all the functions defined in the auth folder
+    authenticate_user,
+    create_access_token,
+    verify_token,
+    create_refresh_token,
+    refresh_access_token,
+    logout_user,
+    get_user,
+    update_user,
+    set_user_password,
+    change_user_password,
+)
+
+from backend.auth.config import ABSOLUTE_SESSION_EXPIRE_DAYS
 
 app = FastAPI()                              # Create FastAPI app
 
-# This reads our .env file and store values into  environment
-load_dotenv()
-
-ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS", "30"))
-
 ALLOWED_ROLES = {"admin", "hr", "engineering", "employee", "marketing", "finance", "c-level"} #List for allowed folders
+
+
 
 
 # NEW: Model for login request body
@@ -84,7 +94,7 @@ class RefreshRequest(BaseModel):
     
 @app.post("/refresh")   # called when frontend requests token refresh 
 def refresh(request: RefreshRequest):      #defining refresh api
-    from backend.auth import refresh_access_token
+    
     tokens = refresh_access_token(request.refresh_token)
 
     if not tokens:
@@ -156,7 +166,6 @@ class LogoutRequest(BaseModel):
 #When logout endpoint is called
 @app.post("/logout")
 def logout(request: LogoutRequest):
-    from backend.auth import logout_user
 
     #we call the logout function and it executes in auth.py
     #on successful logout, true is returned and on unsuccessful logout, false is returned, and we store it in result
@@ -180,8 +189,6 @@ class CreateUserRequest(BaseModel):
 # if admin wants to add a new user
 @app.post("/admin/create-user")
 def create_user(request: CreateUserRequest, token: str):
-    from backend.auth import verify_token
-    from backend.shared_cons import connection_pool
 
     payload = verify_token(token)
 
@@ -218,7 +225,7 @@ def create_user(request: CreateUserRequest, token: str):
     if not name:
         raise HTTPException(status_code=400, detail="Name cannot be empty")
 
-    # Check if emp_id already exists in db
+    # Check if newly created user's emp_id already exists in db
     existing_user = get_user(emp_id)
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
@@ -275,8 +282,7 @@ class SetPasswordRequest(BaseModel):
     
 #user enters his emp_id and new_password to set
 @app.post("/set-password")
-def set_password(request: SetPasswordRequest, token: str = None):
-    from backend.auth import set_user_password, verify_token
+def set_password(request: SetPasswordRequest):
     
     #Empty password (like "" or "  ") is not allowed
     new_password = request.new_password.strip()
@@ -302,25 +308,8 @@ def set_password(request: SetPasswordRequest, token: str = None):
         return {"message": "Password set successfully"}
 
     # CASE 2: Password already exists → require authentication
-    #we first verify the jwt token provided by user
-    if not token:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    payload = verify_token(token)
-
-    #if token is invalid or expired, we throw error
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    #we extract emp_id of the logged in user from jwt
-    emp_id_from_token = payload["sub"].lower()
-
-    #we ensure that user can only set his OWN password and not someone else's
-    if emp_id_from_token != emp_id:
-        raise HTTPException(status_code=403, detail="Not authorized to set this password")
-
-    #if password already exists, we do not allow resetting here
-    raise HTTPException(status_code=400, detail="Password already set. Use change-password instead.")
+    
+    raise HTTPException(status_code=400, detail="Password already exists. Use change/password instead")   
 
 
 #endpoint for changing password
@@ -332,7 +321,6 @@ class ChangePasswordRequest(BaseModel):
 #user enters his emp_id, old password to verify and the new password he wants to replace the old password with
 @app.post("/change-password")
 def change_password(request: ChangePasswordRequest):
-    from backend.auth import change_user_password
     
     #old password can't be replaced with Empty password 
     new_password = request.new_password.strip()

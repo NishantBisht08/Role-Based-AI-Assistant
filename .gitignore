@@ -5,3 +5,10 @@ chroma_db/
 chroma_db_*/
 *.pyc
 .cache/
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/

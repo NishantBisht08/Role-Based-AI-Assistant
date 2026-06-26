@@ -1,0 +1,306 @@
+In test.py folder, in the below code:- 
+
+# QUESTION
+query = input("Ask your question: ")
+
+retrieved_docs = db.similarity_search(query, k=3)
+context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+
+
+Here, we have k=3, that means when relevant information is being fetched from folders, 
+3 main chunks of relevant information is being fetched and being used for question and answering
+
+Rate limit is exceeded in marketing and c level, 
+hr also crashes
+
+
+Current code takes almost 14 seconds to run
+It has one time response only, 
+then it terminates and you have to run the file again to ask another question
+
+
+The warnings in our code once we enter the user role, are difficult to remove,
+ we hope to solve it during frontend
+
+
+Current chunk_size is 500 and overlap=50
+Code is working well for these roles:
+employee 
+engineering
+hr
+c-level
+
+makes mistakes for indepth questions about quarterly reports for finance and marketing roles
+
+
+
+
+
+
+in main.py file
+
+
+
+🔥 Q1: Why verify user from DB if JWT is already valid?
+
+You said:
+
+“If payload is valid, user should be correct only”
+
+👉 ❌ Not fully true
+👉 JWT proves identity at time of login, not current state
+
+🧠 Key idea
+
+JWT = proof of past authentication, NOT current authorization
+
+🔥 Real problems if you DON’T check DB
+❌ Case 1: User deleted after login
+User logs in → gets token
+Admin deletes user
+Token still valid
+
+👉 Without DB check:
+→ deleted user can still access system ❌
+
+❌ Case 2: Account locked after login
+User logs in
+Then multiple failed attempts → account locked
+Token still valid
+
+👉 Without DB check:
+→ locked user can still access ❌
+
+❌ Case 3: Role changed
+User was employee
+Admin upgrades to admin
+
+👉 JWT still has old role
+→ outdated permissions ❌
+
+
+🔥 What your system does (correct design)
+users = load_users()
+user = users.get(username)
+
+👉 This ensures:
+
+✔ user still exists
+✔ user not locked
+✔ user state is current
+
+
+
+🔥 Q2: Why trust username from JWT but not role?
+
+This is a very deep and important point 👇
+
+🧠 First: Is JWT payload safe?
+
+👉 JWT is:
+
+❌ NOT encrypted
+✅ only signed
+
+👉 Anyone can:
+
+decode it
+SEE contents
+🔥 Attack scenario
+
+Suppose attacker modifies token payload:
+
+{
+  "sub": "sid",
+  "role": "c-level"
+}
+
+👉 If your system blindly trusts role:
+
+→ attacker becomes admin 😬
+
+🔥 Why can’t they just change it?
+
+Because of signature:
+
+jwt.encode(payload, SECRET_KEY)
+
+👉 If they modify payload:
+→ signature breaks
+→ token becomes invalid
+
+🤔 Then why not trust role?
+
+Because:
+
+🔥 Best practice: “Trust minimal data from token”
+
+👉 You use JWT only for:
+
+identity (who user is)
+
+👉 NOT for:
+
+authorization (what they can do)
+🔥 Why username is okay to trust
+
+Because:
+
+It’s just an identifier
+You verify it again in DB
+user = users.get(username)
+
+👉 So even if attacker changes username:
+→ DB lookup will fail
+
+🔥 Why role is NOT trusted
+
+Because:
+
+Role determines permissions
+Sensitive decision
+
+👉 So you always do:
+
+role = user["role"]   # from DB
+🔥 Simple analogy
+
+Think:
+
+JWT = ID card
+
+Name → fine
+Job role → can be outdated or manipulated
+
+So:
+
+👉 You check company database for role
+
+
+
+
+
+
+
+
+
+
+
+🔥 Complete answer (2 reasons)
+
+🔹 1. Outdated data (what you said)
+
+User role may change after login
+JWT still contains old role
+
+👉 Example:
+
+Was employee → promoted to admin
+JWT still says employee
+
+
+🔹 2. Security / trust minimization (MORE IMPORTANT)
+
+👉 Best practice:
+
+“Never trust authorization data from client-controlled tokens”
+
+Even though JWT is signed:
+
+You still treat it as untrusted input
+You trust database as source of truth
+🔥 Why this matters
+
+Even if JWT is valid:
+
+You want latest role
+You want server-controlled permissions
+
+
+🔥 Clean final understanding
+
+👉 Correct statement:
+
+“We don’t trust the role from JWT because 
+it may be outdated and because authorization decisions 
+should always be based on trusted server-side data.”
+
+🧠 Simple mental model
+JWT → identity (who you are)
+DB → authority (what you can do)
+🧠 Interview-ready answer
+
+“I include role in JWT for convenience, 
+but I always fetch it from the database because roles can change
+ and authorization decisions should rely on server-side trusted data.”
+
+
+
+
+
+🔥 Reason 3: Defense in depth (core security principle)
+
+Even if JWT is safe:
+
+👉 You don’t rely on one layer only
+
+You add:
+
+JWT verification ✅
+DB validation ✅
+lock check ✅
+
+
+
+🔥 Reason 4: Secret key risk (rare but critical)
+
+If SECRET_KEY is leaked:
+
+👉 attacker can generate valid tokens
+
+Then:
+
+{
+  "sub": "sid",
+  "role": "c-level"
+}
+
+✔ signature valid
+✔ token valid
+
+👉 Now only DB check saves you
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
