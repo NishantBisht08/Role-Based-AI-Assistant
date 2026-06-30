@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Link } from "react-router-dom";
-
+import useVerifySession from "../hooks/use_verify_session";
 
 const folderDisplayNames = {
     engineering: "Engineering Documents",
@@ -14,9 +15,36 @@ const folderDisplayNames = {
 
 function Dashboard() {
 
+    const navigate = useNavigate();
+    const verifySession = useVerifySession();
+    const [checking, setChecking] = useState(true);
+    
+    useEffect(() => {
+
+    async function checkSession() {
+
+        const valid = await verifySession();
+
+        if (!valid) {
+
+            navigate("/login", { replace: true });
+
+            return;
+
+        }
+
+        setChecking(false);
+
+    }
+
+    checkSession();
+
+}, [navigate]);
+
+
     const { user, loading } = useAuth();
 
-    if (loading) {
+    if (loading || checking) {
         return <h2>Loading...</h2>;
     }
 

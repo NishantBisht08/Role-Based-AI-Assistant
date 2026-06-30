@@ -44,7 +44,7 @@ def create_refresh_token(emp_id: str):
 def refresh_access_token(refresh_token: str):
     refresh_token_hash = hashlib.sha256(
         refresh_token.encode()
-    ).hexdigest()
+    ).hexdigest()                                       #verifies whether existing refresh token is valid or not
 
     current_time = time.time()
     conn = connection_pool.getconn()
