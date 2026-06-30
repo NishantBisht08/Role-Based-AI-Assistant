@@ -20,7 +20,7 @@ const refreshClient = axios.create({
     },
 });
 
-// All requests wait for the same refresh operation.
+// Concurrent failed requests share the same refresh operation.
 let refreshPromise = null;
 
 const excludedEndpoints = [
@@ -75,8 +75,15 @@ api.interceptors.response.use(
 
             return api(originalRequest);
         } catch (refreshError) {
-            // Prevent repeatedly reloading /login.
-            if (window.location.pathname !== "/login") {
+            /*
+             * AuthProvider uses suppressAuthRedirect for its startup /me check.
+             * An unauthenticated visitor on a public page should not be
+             * forcefully redirected to /login.
+             */
+            if (
+                !originalRequest.suppressAuthRedirect &&
+                window.location.pathname !== "/login"
+            ) {
                 window.location.replace("/login");
             }
 
