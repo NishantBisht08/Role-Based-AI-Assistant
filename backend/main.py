@@ -1,4 +1,8 @@
-from fastapi import FastAPI, HTTPException   # FastAPI framework, HTTPException for error responses
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from backend.rag_engine.rbac import ROLE_FOLDERS
+
+from fastapi import FastAPI, HTTPException, Request   # FastAPI framework, HTTPException for error responses
 from pydantic import BaseModel               # Used to define request body structure (JSON input)
 
 import time  #used for session tracking and lock checks
@@ -17,11 +21,26 @@ from backend.auth import (           #importing all the functions defined in the
     update_user,
     set_user_password,
     change_user_password,
+    get_current_user,
 )
 
-from backend.auth.config import ABSOLUTE_SESSION_EXPIRE_DAYS
+from backend.auth.config import ABSOLUTE_SESSION_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
+
+from backend.auth.config import CLIENT_URL
 
 app = FastAPI()                              # Create FastAPI app
+
+app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=[CLIENT_URL],
+
+    allow_credentials=True,
+
+    allow_methods=["*"],
+
+    allow_headers=["*"],
+)
 
 ALLOWED_ROLES = {"admin", "hr", "engineering", "employee", "marketing", "finance", "c-level"} #List for allowed folders
 
@@ -82,25 +101,98 @@ def login(request: LoginRequest):
     refresh_token = create_refresh_token(emp_id) #We call creeate_refresh function and  pass the emp_id as parameter to create_refresh function defined in auth file, which creates and returns the refresh token to us
 
     # Send token back to user, "We send this data as an HTTP response back to the client"
-    return { 
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"  #Bearer = whoever holds the token is the user                                          It tells the client how to use the token, typically indicating it should be sent as a Bearer token in the Authorization header.
-           }
+    
+    response = JSONResponse(
+           content={
+                      "message": "Login successful"
+                   }
+               )
+
+    response.set_cookie(
+                    key="access_token",
+                    value=access_token,
+                    httponly=True,
+                    secure=False,          # Change to True after HTTPS deployment
+                    samesite="lax",
+                    max_age=int(ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+                )
+
+    response.set_cookie(
+                    key="refresh_token",
+                    value=refresh_token,
+                    httponly=True,
+                    secure=False,          # Change to True after HTTPS deployment
+                    samesite="lax",
+                    max_age=int(REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
+                   )
+
+    return response
+
+# Returns information about the currently logged-in user
+@app.get("/me")
+def get_me(request: Request):
+
+    # Authenticate the user using the HttpOnly cookie
+    user = get_current_user(request)
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+
+    return {
+        "emp_id": user["emp_id"],
+        "name": user["name"],
+        "role": user["role"],
+        "accessible_folders": ROLE_FOLDERS[user["role"]]
+    }
+    
     
 
-class RefreshRequest(BaseModel):
-    refresh_token: str
+
     
 @app.post("/refresh")   # called when frontend requests token refresh 
-def refresh(request: RefreshRequest):      #defining refresh api
+def refresh(request: Request):      #defining refresh api
     
-    tokens = refresh_access_token(request.refresh_token)
+    refresh_token = request.cookies.get("refresh_token")
+    
+    if not refresh_token:
+        raise HTTPException(
+        status_code=401,
+        detail="Refresh token missing"
+    )
+    
+    tokens = refresh_access_token(refresh_token)
 
     if not tokens:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    
+    response = JSONResponse(
+           content={
+                      "message": "Token refreshed successfully"
+                   }
+               )
 
-    return tokens  #shows both tokens to the user as http response, visible on frontend
+    response.set_cookie(
+                    key="access_token",
+                    value=tokens["access_token"],
+                    httponly=True,
+                    secure=False,          # Change to True after HTTPS deployment
+                    samesite="lax",
+                    max_age=int(ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+                )
+
+    response.set_cookie(
+                    key="refresh_token",
+                    value=tokens["refresh_token"],
+                    httponly=True,
+                    secure=False,          # Change to True after HTTPS deployment
+                    samesite="lax",
+                    max_age=int(REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
+                   )
+
+    return response  # Sends the new HttpOnly cookies back to the browser
     
 '''# Client sends refresh token (string) to this endpoint
 # This endpoint is called by frontend when access token expires (not a UI button defined here)
@@ -160,24 +252,45 @@ def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provi
     
     return result  #Return the result (answer + sources) as HTTP response to the client
     
-class LogoutRequest(BaseModel):
-    refresh_token: str
+    
     
 #When logout endpoint is called
 @app.post("/logout")
-def logout(request: LogoutRequest):
+def logout(request: Request):
+    
+    refresh_token = request.cookies.get("refresh_token")
+    
+    if not refresh_token:
+        raise HTTPException(
+        status_code=401,
+        detail="Refresh token missing"
+    )
 
     #we call the logout function and it executes in auth.py
     #on successful logout, true is returned and on unsuccessful logout, false is returned, and we store it in result
-    result = logout_user(request.refresh_token)   
+    result = logout_user(refresh_token)   
 
     #if logout is unsuccessful
     if not result: 
        raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     #if logout is successful
-    return {"message": "Logged out successfully"}
-
+    response = JSONResponse(
+            content={
+                     "message": "Logged out successfully"
+                    }
+                )
+    
+    response.delete_cookie(
+             key="access_token"
+         )
+     
+    response.delete_cookie(
+             key="refresh_token"
+         )
+    
+    return response 
+    
 
 
 #End points for admin

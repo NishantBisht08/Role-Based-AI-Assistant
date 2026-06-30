@@ -1,4 +1,5 @@
 from .database import get_user, update_user
+from .auth_guard import get_current_user
 
 from .login import authenticate_user
 

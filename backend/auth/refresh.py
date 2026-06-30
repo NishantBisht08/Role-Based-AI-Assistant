@@ -41,81 +41,113 @@ def create_refresh_token(emp_id: str):
 
 #Function to refresh the access token, called from refresh end point
 
-def refresh_access_token(refresh_token: str): #recieves the prev refresh token as parameter
-    
+def refresh_access_token(refresh_token: str):
+    refresh_token_hash = hashlib.sha256(
+        refresh_token.encode()
+    ).hexdigest()
 
-    refresh_token_hash = hashlib.sha256(refresh_token.encode()).hexdigest() #hashes the incoming token
-    current_time = time.time() #gets current time
-
-    # Connect to DB
+    current_time = time.time()
     conn = connection_pool.getconn()
+
     try:
         cur = conn.cursor()
 
-        # Fetch user directly using refresh token
-        cur.execute("SELECT * FROM users WHERE refresh_token = %s", (refresh_token_hash,))
+        # Lock the matching row until token rotation is complete.
+        cur.execute(
+            """
+            SELECT emp_id, role, lock_until,
+                   refresh_token_expiry, session_start
+            FROM users
+            WHERE refresh_token = %s
+            FOR UPDATE
+            """,
+            (refresh_token_hash,)
+        )
+
         row = cur.fetchone()
 
-        cur.close()
+        if not row:
+            conn.rollback()
+            return None
+
+        (
+            emp_id,
+            role,
+            lock_until,
+            refresh_token_expiry,
+            session_start,
+        ) = row
+
+        if lock_until > current_time:
+            conn.rollback()
+            return None
+
+        if not session_start:
+            conn.rollback()
+            return None
+
+        absolute_expiry = (
+            session_start
+            + ABSOLUTE_SESSION_EXPIRE_DAYS * 24 * 60 * 60
+        )
+
+        if current_time > absolute_expiry:
+            conn.rollback()
+            return None
+
+        if refresh_token_expiry < current_time:
+            conn.rollback()
+            return None
+
+        access_token = create_access_token({
+            "sub": emp_id,
+            "role": role,
+            "session_start": session_start,
+        })
+
+        new_refresh_token = secrets.token_urlsafe(32)
+
+        new_refresh_token_hash = hashlib.sha256(
+            new_refresh_token.encode()
+        ).hexdigest()
+
+        new_expiry = (
+            current_time
+            + REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+        )
+
+        cur.execute(
+            """
+            UPDATE users
+            SET refresh_token = %s,
+                refresh_token_expiry = %s
+            WHERE emp_id = %s
+              AND refresh_token = %s
+            """,
+            (
+                new_refresh_token_hash,
+                new_expiry,
+                emp_id,
+                refresh_token_hash,
+            )
+        )
+
+        if cur.rowcount != 1:
+            conn.rollback()
+            return None
+
+        conn.commit()
+
+        return {
+            "access_token": access_token,
+            "refresh_token": new_refresh_token,
+        }
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
+        cur.close()
         connection_pool.putconn(conn)
-
-    if not row:
-        return None
-
-    emp_id = row[0]
-
-    user = {
-        "name": row[1],
-        "password_hash": row[2],
-        "role": row[3],
-        "failed_attempts": row[4],
-        "lock_until": row[5],
-        "lock_count": row[6],
-        "last_failed_login": row[7],
-        "refresh_token": row[8],
-        "refresh_token_expiry": row[9],
-        "session_start": row[10]
-    }
-
-    #if account is locked, then deny refresh
-    if user["lock_until"] > current_time:
-        return None
-    
-    #Absolute session expiry check
-    session_start = user.get("session_start")
-
-    if not session_start:
-        return None
-    
-    absolute_expiry = session_start + (ABSOLUTE_SESSION_EXPIRE_DAYS * 24 * 60 *60)
-    
-    if current_time > absolute_expiry:
-        return None
-
-    # Check if refresh token expired
-    if user.get("refresh_token_expiry", 0) < current_time:
-        return None
-
-    # Create new access token
-    access_token = create_access_token({
-        "sub": emp_id,
-        "role": user["role"],
-        "session_start": user["session_start"]
-    })
-
-    # Create NEW refresh token (rotation)
-    new_refresh_token = secrets.token_urlsafe(32)
-    new_refresh_token_hash = hashlib.sha256(new_refresh_token.encode()).hexdigest()
-    new_expiry = current_time + (REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 *60)
-
-    user["refresh_token"] = new_refresh_token_hash
-    user["refresh_token_expiry"] = new_expiry
-
-    update_user(emp_id, user)  # replace save_users
-
-    return {
-        "access_token": access_token,
-        "refresh_token": new_refresh_token
-    }
     

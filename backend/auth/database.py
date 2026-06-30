@@ -22,6 +22,7 @@ def get_user(emp_id):
     
     #returns data again in json format
     return {
+        "emp_id": row[0],  
         "name": row[1],
         "password_hash": row[2],
         "role": row[3],

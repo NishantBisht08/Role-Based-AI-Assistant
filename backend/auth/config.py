@@ -3,11 +3,12 @@ from dotenv import load_dotenv
 from passlib.context import CryptContext
 
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # This reads our .env file from the project root
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
+
+CLIENT_URL = os.getenv("CLIENT_URL")
 
 
 
