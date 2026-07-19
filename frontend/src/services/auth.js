@@ -34,3 +34,16 @@ export async function refresh() {
 
     return response.data;
 }
+
+
+export async function askQuestion(question) {
+
+    const response = await api.post("/ask", {
+
+        question,
+
+    });
+
+    return response.data;
+
+}

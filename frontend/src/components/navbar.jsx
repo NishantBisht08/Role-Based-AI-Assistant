@@ -25,20 +25,17 @@ function Navbar() {
     }
  
     try {
-
         await logout();
-
+    } catch (err) {
+        console.error("Backend logout failed:", err);
+    } finally {
+        if (user?.emp_id) {
+            sessionStorage.removeItem(`chat_history_${user.emp_id}`);
+        }
         setUser(null);
-
         navigate("/");
-
     }
 
-    catch (err) {
-
-        console.error(err);
-
-    }
 
 };
 

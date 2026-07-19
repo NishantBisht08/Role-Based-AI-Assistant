@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from backend.rag_engine.rbac import ROLE_FOLDERS
 
 from fastapi import FastAPI, HTTPException, Request   # FastAPI framework, HTTPException for error responses
-from pydantic import BaseModel               # Used to define request body structure (JSON input)
+from pydantic import BaseModel, Field               # Used to define request body structure (JSON input)
 
 import time  #used for session tracking and lock checks
 
@@ -207,12 +207,28 @@ def refresh(request: Request):      #defining refresh api
 
 # If validation fails → raise HTTPException (401 Unauthorized)
 # If successful → return new tokens as HTTP response (JSON) to the client(user)''' 
+
+
+class QueryRequest(BaseModel):
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000
+    )
     
 @app.post("/ask")  #we click the ask button
-def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provides token and question
+def ask_ai(request: Request, query: QueryRequest):   #defining the ask endpoint here, user provides token and question
+    
+    access_token = request.cookies.get("access_token")  #reading JWT token from browser 
+
+    if not access_token:
+              raise HTTPException(
+              status_code=401,
+              detail="Access token missing"
+            )
     
     # NEW: Verify token and extract payload from JWT, verify function is called here and executes in auth.py file
-    payload = verify_token(request.token) #We pass access token as argument, the function returns payload which contains emp_id, role and the expiry date of the token
+    payload = verify_token(access_token) #We pass access token as argument, the function returns payload which contains emp_id, role and the expiry date of the token
 
     # If token invalid or expired → error is shown to user
     if not payload:
@@ -248,7 +264,7 @@ def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provi
 
     # Pass user's role and the question
     # This function performs RBAC (Role Based Authentication Checks), retrieves documents, calls LLM, and returns answer
-    result = ask_question(role, request.question) 
+    result = ask_question(role, query.question)
     
     return result  #Return the result (answer + sources) as HTTP response to the client
     

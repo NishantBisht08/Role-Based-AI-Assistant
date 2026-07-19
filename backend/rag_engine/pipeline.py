@@ -117,10 +117,12 @@ ANSWER:"""
     try:
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # LLaMA 70B model on Groq
+            model="qwen/qwen3.6-27b",  # LLaMA 70B model on Groq
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,    # low = more factual, less creative
             max_tokens=1024,    # max length of the answer (~750 words)
+            reasoning_effort="none",
+            reasoning_format="hidden",
         )
         answer = response.choices[0].message.content.strip()
     except Exception as e:
