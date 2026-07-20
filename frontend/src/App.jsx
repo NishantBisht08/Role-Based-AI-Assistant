@@ -33,7 +33,7 @@ function App() {
                 <Route path="/about-author" element={<AboutAuthor />} />
                 <Route path="/guide" element={<DemoGuide />} />
                 <Route path="/dataset" element={<Dataset />} />
-                <Route path="/login" element={<Login />} />
+                <Route path="/login" element={<Login />} />             
                 <Route
                         path="/dashboard"
                         element={
@@ -53,7 +53,15 @@ function App() {
                       />
 
                 <Route path="/set-password" element={<SetPassword />} />
-                <Route path="/change-password" element={<ChangePassword/>}/>
+                <Route
+                       path="/change-password"
+                       element={
+                   <ProtectedRoute>
+                   <ChangePassword />
+                   </ProtectedRoute>
+                }
+            />
+            
             </Routes>
 
             <Footer />

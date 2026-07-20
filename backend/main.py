@@ -1,5 +1,6 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi import Depends
 from backend.rag_engine.rbac import ROLE_FOLDERS
 
 from fastapi import FastAPI, HTTPException, Request   # FastAPI framework, HTTPException for error responses
@@ -261,10 +262,18 @@ def ask_ai(request: Request, query: QueryRequest):   #defining the ask endpoint 
 
     # IMPORTANT: # Get role from database (do NOT trust role from JWT for security reasons), also if admin changed user's role, so we are checking to make sure the role is correct 
     role = user["role"]
+    
+    question = query.question.strip()
+    
+    if not question:
+        raise HTTPException(
+        status_code=400,
+        detail="Question cannot be empty."
+    )
 
     # Pass user's role and the question
     # This function performs RBAC (Role Based Authentication Checks), retrieves documents, calls LLM, and returns answer
-    result = ask_question(role, query.question)
+    result = ask_question(role, question)
     
     return result  #Return the result (answer + sources) as HTTP response to the client
     
@@ -449,7 +458,19 @@ class ChangePasswordRequest(BaseModel):
     
 #user enters his emp_id, old password to verify and the new password he wants to replace the old password with
 @app.post("/change-password")
-def change_password(request: ChangePasswordRequest):
+def change_password(request: ChangePasswordRequest, current_user = Depends(get_current_user)):
+    
+    if not current_user:
+        raise HTTPException(
+           status_code=401,
+           detail="Not authenticated"
+    )
+
+    if request.emp_id.strip().lower() != current_user["emp_id"].lower():
+        raise HTTPException(
+           status_code=403,
+           detail="You can only change your own password."
+    )
     
     #old password can't be replaced with Empty password 
     new_password = request.new_password.strip()
@@ -458,7 +479,7 @@ def change_password(request: ChangePasswordRequest):
 
     #if password is correct, success message is returned, else some kind of error message is returned
     result = change_user_password(
-        request.emp_id,
+        current_user["emp_id"],
         request.old_password,
         new_password
     )

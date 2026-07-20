@@ -43,7 +43,7 @@ Request
 ```json
 {
     "emp_id": "emp001",
-    "password": "password123"
+    "new_password": "password123"
 }
 ```
 

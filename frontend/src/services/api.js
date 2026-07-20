@@ -28,7 +28,6 @@ const excludedEndpoints = [
     "/logout",
     "/refresh",
     "/set-password",
-    "/change-password",
 ];
 
 function getRequestPath(config) {

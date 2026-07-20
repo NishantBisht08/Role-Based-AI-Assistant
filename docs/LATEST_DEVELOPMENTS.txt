@@ -1,0 +1,72 @@
+Project Status Update (Latest)
+
+The backend is considered feature-complete and stable. Core functionality has been implemented and verified.
+
+Recently Completed
+Authentication
+Login flow completed.
+Logout flow completed.
+JWT access token authentication via HttpOnly cookies.
+Refresh token rotation implemented.
+Automatic access token refresh using Axios interceptors.
+Absolute session expiry implemented.
+Session verification on protected routes.
+Logout correctly clears backend session and frontend sessionStorage.
+Per-user authentication handled through AuthContext.
+Chat
+Chat endpoint fully integrated.
+Switched Groq model to Qwen 3.6 27B.
+Hidden reasoning enabled (no <think> output).
+Per-user chat history stored in sessionStorage.
+Chat restores automatically after browser refresh.
+Logout removes stored chat history.
+Character limit implemented.
+Conversation history automatically trimmed after maximum exchanges.
+Frontend
+Dashboard functional.
+Protected routing complete.
+Axios centralized with automatic refresh handling.
+AuthContext and ProtectedRoute completed.
+Session handling verified.
+Static Audit
+
+Performed a complete static review.
+
+Verified:
+
+Authentication flow
+Refresh flow
+Absolute session handling
+JWT verification
+Secure cookies
+Logout cleanup
+Chat persistence
+Backend endpoints
+RAG pipeline
+PostgreSQL integration
+
+Remaining functional frontend work:
+
+Set Password page (connect to existing backend endpoint)
+Change Password page (Admin-only UI + connect to backend endpoint)
+Create User page (Admin-only UI + connect to backend endpoint)
+Dataset page (currently placeholder)
+
+Documentation
+
+Updated FRONTEND_STATUS.md to reflect the current state:
+
+Chat is now considered functional.
+Remaining work is primarily endpoint integration for admin pages and UI polish.
+Chat persistence, session restoration, logout cleanup, and history trimming are now documented.
+Roadmap updated to focus on:
+Set Password
+Admin Change Password
+Admin Create User
+Dataset page
+UI/UX polishing
+Current Phase
+
+The project has transitioned from core functionality development to frontend completion and UI/UX.
+
+The backend architecture should be treated as stable. Avoid architectural refactoring unless explicitly requested. Focus on completing the remaining frontend pages, integrating the existing backend endpoints, and improving the user interface while preserving the existing architecture.

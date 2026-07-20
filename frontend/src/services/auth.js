@@ -44,6 +44,29 @@ export async function askQuestion(question) {
 
     });
 
-    return response.data;
+     return response.data
 
 }
+
+
+
+export async function setPassword(emp_id, new_password) {
+    const response = await api.post("/set-password", {
+        emp_id,
+        new_password,
+    });
+
+    return response.data;
+}
+
+
+export async function changePassword(emp_id, old_password, new_password) {
+    const response = await api.post("/change-password", {
+        emp_id,
+        old_password,
+        new_password,
+    });
+
+    return response.data;
+}
+

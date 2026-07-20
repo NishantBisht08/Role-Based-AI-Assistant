@@ -126,7 +126,8 @@ ANSWER:"""
         )
         answer = response.choices[0].message.content.strip()
     except Exception as e:
-        answer = f"LLM call failed: {e}"
+         print(f"LLM Error: {e}")   # or use logging
+         answer = "Sorry, I couldn't generate a response. Please try again."
 
     # --- 6. Return answer + sources ---
     return {"answer": answer, "sources": sources}
