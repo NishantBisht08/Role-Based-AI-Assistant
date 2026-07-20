@@ -146,7 +146,7 @@ def get_me(request: Request):
         "emp_id": user["emp_id"],
         "name": user["name"],
         "role": user["role"],
-        "accessible_folders": ROLE_FOLDERS[user["role"]]
+        "accessible_folders": ROLE_FOLDERS.get(user["role"], []) #if folder is empty, return nothing
     }
     
     
@@ -155,7 +155,7 @@ def get_me(request: Request):
     
 @app.post("/refresh")   # called when frontend requests token refresh 
 def refresh(request: Request):      #defining refresh api
-    
+    z
     refresh_token = request.cookies.get("refresh_token")
     
     if not refresh_token:
@@ -326,36 +326,29 @@ class CreateUserRequest(BaseModel):
     
 # if admin wants to add a new user
 @app.post("/admin/create-user")
-def create_user(request: CreateUserRequest, token: str):
+def create_user(request: CreateUserRequest, 
+                current_user = Depends(get_current_user)
+                ):
 
-    payload = verify_token(token)
+    if not current_user:
+        raise HTTPException(
+        status_code=401,
+        detail="Not authenticated"
+    )
+        
+    if current_user["role"] != "admin":
+        raise HTTPException(
+        status_code=403,
+        detail="Not authorized"
+    )
 
-    #checking if admin's jwt is valid or not
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    #  Extract admin's identity(emp_id which is admin) from JWT
-    emp_id_from_token = payload["sub"].lower()
-
-    #now we are checking the db to ensure if this emp_id (that we extracted from jwt) exist or not in db
-    user = get_user(emp_id_from_token)  #so user contains all the fields of emp_id=admin in db
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    emp_id = request.emp_id.strip().lower()  #converting new emp_id provided by admin of the new user to lowercase
     
-    # Fetch admin's role from DB (NOT JWT)
-    if user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    #Session binding check, If Admin has logged out, he should not be able to create_new_user
-    token_session = payload.get("session_start")
-    if token_session != user.get("session_start"):
-            raise HTTPException(status_code=401, detail="Session expired. Please login again.")
-
-    # Lock check, If Admin's account is locked, jwt shouldn't be allowed to create new user
-    if user["lock_until"] > time.time():
-           raise HTTPException(status_code=403, detail="Account is locked")
-
-    emp_id = request.emp_id.lower()  #converting new emp_id provided by admin of the new user to lowercase
+    if not emp_id:
+        raise HTTPException(
+        status_code=400,
+        detail="Employee ID cannot be empty."
+    )
     
     #Removes spaces from start and end, ex: "  Sid " becomes "Sid" and "  " becomes ""
     name = request.name.strip()
@@ -369,7 +362,7 @@ def create_user(request: CreateUserRequest, token: str):
         raise HTTPException(status_code=400, detail="User already exists")
 
     #getting the new user's role from admin
-    role = request.role.lower()
+    role = request.role.strip().lower()
 
     #checking if admin created user role exists or not 
     if role not in ALLOWED_ROLES:

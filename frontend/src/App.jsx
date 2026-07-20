@@ -18,6 +18,7 @@ import Dashboard from "./pages/dashboard";
 import Chat from "./pages/chat";
 import SetPassword from "./pages/set_password";
 import ChangePassword from "./pages/change_password";
+import CreateUser from "./pages/create_user";
 
 
 // Defining all the routes 
@@ -53,6 +54,7 @@ function App() {
                       />
 
                 <Route path="/set-password" element={<SetPassword />} />
+                
                 <Route
                        path="/change-password"
                        element={
@@ -61,7 +63,16 @@ function App() {
                    </ProtectedRoute>
                 }
             />
-            
+
+            <Route 
+                    path="/create-user" 
+                    element={
+                    <ProtectedRoute>
+                    <CreateUser />
+                    </ProtectedRoute>
+                 }
+              />
+
             </Routes>
 
             <Footer />

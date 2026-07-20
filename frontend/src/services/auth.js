@@ -66,7 +66,20 @@ export async function changePassword(emp_id, old_password, new_password) {
         old_password,
         new_password,
     });
+}
+
+export async function createUser(emp_id, name, role) {
+
+    const response = await api.post(
+        "/admin/create-user",
+        {
+            emp_id,
+            name,
+            role,
+        }
+    );
 
     return response.data;
+
 }
 

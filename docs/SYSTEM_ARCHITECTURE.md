@@ -324,6 +324,40 @@ Reset Session
 Force Login
 ```
 
+# Admin User Creation Flow
+
+
+Authenticated Admin
+
+↓
+
+POST /admin/create-user
+
+↓
+
+Verify JWT
+
+↓
+
+Load Current User
+
+↓
+
+Verify Admin Role
+
+↓
+
+Validate Employee Data
+
+↓
+
+Insert User
+
+↓
+
+Return Success
+
+
 ---
 
 # RAG Pipeline
@@ -533,6 +567,10 @@ Role Lookup
 
 ↓
 
+Application Authorization
+
+↓
+
 RBAC
 
 ↓
@@ -558,6 +596,7 @@ The architecture follows these principles:
 - Secure cookie-based authentication
 - Centralized API communication
 - Reusable frontend components
+- Administrative privileges are independent of document-access permissions.
 
 ---
 

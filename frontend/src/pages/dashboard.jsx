@@ -130,6 +130,18 @@ function Dashboard() {
 
                     </Link>
 
+                    {user.role === "admin" && (     //Shows the create user button if your role is admin, this is like the if condition, called conditional rendering in react
+
+                    <Link to="/create-user">
+
+                        <button>
+                            Create User
+                        </button>
+
+                    </Link>
+
+                     )}
+
                 </div>
 
             </section>

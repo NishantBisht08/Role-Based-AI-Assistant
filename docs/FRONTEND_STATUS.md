@@ -105,7 +105,7 @@ Authentication relies entirely on HttpOnly cookies.
 
 Status
 
-✅ Mostly Complete
+✅ Complete
 
 Implemented
 
@@ -114,12 +114,12 @@ Implemented
 - getCurrentUser()
 - refresh()
 - askQuestion()
-
-Remaining
-
 - setPassword()
 - changePassword()
 - createUser()
+
+Networking remains centralized inside the services layer.
+Pages never communicate with Axios directly.
 
 ---
 
@@ -258,6 +258,13 @@ Navigation
 - Chat
 - Change Password
 - Dataset
+- Create User (Admin Only)
+
+Features
+
+- Displays current user information
+- Displays accessible folders
+- Conditionally renders admin actions
 
 ---
 
@@ -330,13 +337,46 @@ Features
 
 Status
 
-⚠ Not Implemented
+✅ Complete
 
-Needs
+Integrated Endpoints
 
-- Form
 - POST /change-password
-- Logout After Success
+
+Features
+
+- Current password verification
+- New password confirmation
+- Client-side validation
+- Backend error handling
+- Loading state
+- Success message
+- Automatic logout after successful password change
+- Redirect to Login
+
+## Create User
+
+Status
+
+✅ Complete
+
+Integrated Endpoints
+
+- POST /admin/create-user
+
+Access
+
+- Admin Only
+
+Features
+
+- Employee ID input
+- Name input
+- Role selection dropdown
+- Client-side validation
+- Backend validation
+- Success and error handling
+- Redirect protection for non-admin users
 
 ---
 
@@ -424,10 +464,25 @@ Status
 
 ✅ Complete
 
+Change Password
+
+Status
+
+✅ Complete
+
+Create User
+
+Status
+
+✅ Complete
+
 Remaining Functional Work
 
-- Change Password
-- Admin UI
+- Documents Page
+- Dataset Page
+- Demo Guide
+- About
+- About Author
 
 ---
 
@@ -472,16 +527,25 @@ The frontend follows these principles:
 
 ## Phase 2
 
-Remaining Functionality
+Remaining Functionality done
 
 - Set Password
 - Change Password
 - Create User
-- Admin Page
 
 ---
 
 ## Phase 3
+
+Remaining Functional Pages
+
+- Documents
+- Dataset
+- Demo Guide
+- About
+- About Author
+
+## Phase 4
 
 UI Development
 
@@ -493,7 +557,7 @@ UI Development
 
 ---
 
-## Phase 4
+## Phase 5
 
 Testing
 
@@ -510,9 +574,10 @@ The backend architecture is considered stable.
 
 Future work should prioritize:
 
-1. Completing endpoint integration.
-2. Maintaining existing API contracts.
-3. Preserving the modular frontend architecture.
-4. Styling only after functionality is complete.
+1. Completing the remaining informational pages.
+2. Designing the document browsing experience.
+3. Preserving the existing authentication and RBAC architecture.
+4. Styling only after all remaining functionality is complete.
+5. Maintaining the modular frontend architecture and existing API contracts.
 
 Avoid introducing new state management libraries or major architectural changes unless there is a clear technical reason.
