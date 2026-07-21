@@ -154,7 +154,7 @@ function Home() {
                      before logging in.
                 </p>
 
-                 <Link to="/guide"> {/* on clicking this , we get directed to demo page */}
+                 <Link to="/demo"> {/* on clicking this , we get directed to demo page */}
                    Enter Demo Guide
                 </Link>
 

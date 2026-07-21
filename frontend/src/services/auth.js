@@ -66,6 +66,8 @@ export async function changePassword(emp_id, old_password, new_password) {
         old_password,
         new_password,
     });
+
+    return response.data;
 }
 
 export async function createUser(emp_id, name, role) {
@@ -81,5 +83,44 @@ export async function createUser(emp_id, name, role) {
 
     return response.data;
 
+}
+
+
+// Fetch the complete public dataset
+export async function getDataset() {
+
+    const response = await api.get("/dataset");
+
+    return response.data;
+
+}
+
+
+// Fetch documents accessible to the authenticated user
+export async function getRoleDocuments() {
+
+    const response = await api.get("/documents");
+
+    return response.data;
+
+}
+
+
+// Fetch the contents of a single document
+export async function getDocument(document_id) {
+
+    const response = await api.get(`/documents/${document_id}`);
+
+    return response.data;
+
+}
+
+
+// Retrieves a single document from the public Dataset page.
+// Unlike getDocument(), this endpoint does not require
+// authentication or RBAC because it is used by the Home page.
+export async function getPublicDocument(document_id) {
+    const response = await api.get(`/dataset/${document_id}`);
+    return response.data;
 }
 

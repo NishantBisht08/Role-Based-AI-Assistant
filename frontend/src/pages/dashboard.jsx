@@ -114,7 +114,7 @@ function Dashboard() {
 
                 <div>
 
-                    <Link to="/dataset">
+                    <Link to="/dashboard/dataset">
 
                         <button>
                             View Dataset

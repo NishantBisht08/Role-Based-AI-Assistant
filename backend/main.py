@@ -3,6 +3,14 @@ from fastapi.responses import JSONResponse
 from fastapi import Depends
 from backend.rag_engine.rbac import ROLE_FOLDERS
 
+# Document service for listing dataset documents
+from backend.document_service.service import (
+    list_all_documents,
+    list_role_documents,
+    get_document,
+    get_public_document,
+)
+
 from fastapi import FastAPI, HTTPException, Request   # FastAPI framework, HTTPException for error responses
 from pydantic import BaseModel, Field               # Used to define request body structure (JSON input)
 
@@ -59,6 +67,86 @@ class LoginRequest(BaseModel):
 class QueryRequest(BaseModel):
     token: str
     question: str
+    
+    
+
+# ── Public Dataset Endpoint ───────────────────────────────────────────────────
+# Returns metadata for every document in the dataset.
+# This endpoint is public and is used by the Home page Dataset Viewer.
+@app.get("/dataset")
+def get_dataset():
+
+    return {
+        "documents": list_all_documents()
+    }
+    
+
+# ── Role-Based Dataset Endpoint ───────────────────────────────────────────────
+# Returns only the documents the authenticated user is allowed to access.
+# This endpoint is used by the Dashboard Dataset Viewer.
+
+@app.get("/documents")
+def get_documents(current_user: dict = Depends(get_current_user)):
+    
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )    
+
+    return {
+             "documents": list_role_documents(current_user["role"])
+           }
+    
+
+# ── Get Document Endpoint ─────────────────────────────────────────────────────
+# Returns the contents of a requested document after verifying RBAC permissions.
+# Used by the frontend Dataset Viewer to fetch and display document contents.
+
+@app.get("/documents/{document_id}")
+def get_document_content(document_id: str, current_user: dict = Depends(get_current_user) ):
+    
+    if not current_user:
+            raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+
+    document = get_document(
+        document_id,
+        current_user["role"]
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found or access denied."
+        )
+
+    return document
+
+
+
+# Returns the contents of a single document from the public dataset.
+# This endpoint is intentionally public so visitors can explore
+# every document from the Home page.
+@app.get("/dataset/{document_id}")
+
+def public_document(document_id: str):
+
+    # Retrieve the requested document.
+    document = get_public_document(document_id)
+
+    # Return 404 if the document doesn't exist.
+    if document is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found."
+        )
+
+    return document
+
 
 
 # NEW: Login endpoint  (When the user hits login)
@@ -155,7 +243,7 @@ def get_me(request: Request):
     
 @app.post("/refresh")   # called when frontend requests token refresh 
 def refresh(request: Request):      #defining refresh api
-    z
+    
     refresh_token = request.cookies.get("refresh_token")
     
     if not refresh_token:

@@ -5,6 +5,7 @@ import useVerifySession from "../hooks/use_verify_session";
 import { useNavigate } from "react-router-dom";
 
 import { askQuestion } from "../services/auth";
+import ExampleQuestions from "../components/ExampleQuestions";
 
 
     const MAX_CHARACTERS = 2000;
@@ -29,7 +30,8 @@ function Chat() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const [showDocuments, setShowDocuments] = useState(false);
+    // Controls whether the Example Questions panel is visible.
+    const [showQuestions, setShowQuestions] = useState(false);
 
     // ==============================
     // Chat Configuration
@@ -225,13 +227,22 @@ useEffect(() => {
 
                 </h2>
 
-                <button>
-
-                    Documents
-
+                <button
+                   onClick={() => setShowQuestions((previous) => !previous)}
+                >
+                    Example Questions
                 </button>
 
+
             </section>
+
+            {/* Display the Example Questions panel when enabled. */}
+            {
+                showQuestions && (
+                    <ExampleQuestions />
+               )
+            }
+
 
             {messages.length === 0 && (
 
