@@ -99,4 +99,6 @@ Demo Guide page
 UI/UX styling and responsiveness
 
 
-The backend architecture should be treated as stable. Avoid architectural refactoring unless explicitly requested. Focus on completing the remaining frontend pages, integrating the existing backend endpoints, and improving the user interface while preserving the existing architecture.
+The backend architecture should be treated as stable. 
+Avoid architectural refactoring unless explicitly requested. 
+Focus on completing the remaining frontend pages, integrating the existing backend endpoints, and improving the user interface while preserving the existing architecture.

@@ -604,3 +604,61 @@ This design intentionally balances performance (JWT authentication) with securit
 - Refresh token rotation is already implemented and should be preserved.
 - Session invalidation relies on the `session_start` timestamp stored in both the JWT and the database.
 - Authentication logic is intentionally modular; avoid merging the auth files into a single module unless explicitly requested.
+
+
+
+---
+
+# Authentication Verification
+
+The authentication system has been manually verified through end-to-end testing.
+
+The following authentication scenarios were successfully tested:
+
+### Login
+
+- User authentication with valid credentials
+- Invalid credential handling
+- Session initialization after successful login
+
+### Access Token Renewal
+
+- Access token expiration
+- Automatic token refresh through the Axios interceptor
+- Automatic retry of the original protected request
+- Seamless continuation of the authenticated session
+
+### Refresh Token Expiry
+
+- Session expiration after refresh token timeout
+- Automatic redirect to the login page
+- Correct handling of missing or expired refresh tokens
+
+### Absolute Session Expiry
+
+- Verification that refresh token rotation cannot extend the maximum session lifetime
+- Forced re-authentication after absolute session expiration
+
+### Logout
+
+- Refresh token invalidation
+- Session invalidation
+- Authentication cookie removal
+- Protected routes becoming inaccessible after logout
+
+### Password Change
+
+- Current password verification
+- Password update
+- Immediate invalidation of all existing sessions
+- Forced login with the new password
+
+### Session Verification
+
+Verified that protected routes correctly:
+
+- Validate the current session
+- Synchronize frontend authentication state
+- Redirect unauthenticated users to the login page
+
+All authentication flows behaved as expected during end-to-end manual testing.

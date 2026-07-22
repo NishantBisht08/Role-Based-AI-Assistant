@@ -2,34 +2,42 @@
 
 # Role-Based AI Assistant
 
-Version: v1.0
+Version: v2.0
+
+---
 
 # Note for AI Assistants
 
-Treat this document as the authoritative description of the project architecture. Preserve the existing architecture and endpoint contracts unless explicitly asked to redesign them. Prefer extending the current modular structure over introducing new patterns or frameworks.
+Treat this document as the authoritative description of the project architecture.
+
+The backend architecture, authentication system, endpoint contracts, and frontend structure are considered stable. Preserve the existing architecture unless explicitly requested to redesign it.
+
+Prefer extending the current modular implementation over introducing new frameworks or major architectural changes.
 
 ---
 
 # Project Overview
 
-Role-Based AI Assistant is a secure enterprise Retrieval-Augmented Generation (RAG) system built to demonstrate enterprise-grade AI architecture.
+Role-Based AI Assistant is a secure enterprise Retrieval-Augmented Generation (RAG) system designed to demonstrate enterprise-grade AI architecture, secure authentication, and Role-Based Access Control (RBAC).
 
-The application allows employees to securely query internal company documents using a Large Language Model while enforcing strict Role-Based Access Control (RBAC).
+The application enables employees to securely query internal company documents using a Large Language Model while ensuring that every response is generated only from documents the authenticated user is authorized to access.
 
-Unlike a traditional chatbot, every answer is generated only from documents that the authenticated user is authorized to access.
+Unlike traditional chatbots, authorization is enforced before document retrieval begins, ensuring complete separation between authentication, authorization, and AI response generation.
 
 The project emphasizes:
 
-- Secure authentication
-- Authorization
-- Enterprise session management
-- Retrieval-Augmented Generation
-- Modular backend architecture
-- Clean React frontend architecture
+- Secure Authentication
+- Enterprise Session Management
+- Role-Based Authorization (RBAC)
+- Retrieval-Augmented Generation (RAG)
+- Modular Backend Architecture
+- Clean React Frontend Architecture
+- Secure Cookie-Based Authentication
+- Maintainable and Scalable Design
 
 ---
 
-# Tech Stack
+# Technology Stack
 
 ## Backend
 
@@ -40,7 +48,7 @@ The project emphasizes:
 - ChromaDB
 - HuggingFace Embeddings
 - Groq API
-- LLaMA 3.3 70B
+- Qwen 3.6 27B
 - JWT Authentication
 - Argon2 Password Hashing
 
@@ -56,94 +64,102 @@ The project emphasizes:
 
 ---
 
-# High Level Architecture
+# High-Level Architecture
 
-```
 React Frontend
-        │
-        ▼
-Axios API Layer
-        │
-        ▼
+│
+▼
+Axios Services
+│
+▼
 FastAPI Backend
-        │
-        ├──────── Authentication
-        │
-        ├──────── Authorization (RBAC)
-        │
-        ├──────── PostgreSQL
-        │
-        ├──────── ChromaDB
-        │
-        └──────── Groq LLaMA
-```
+│
+├──────── Authentication
+│
+├──────── Authorization (RBAC)
+│
+├──────── PostgreSQL
+│
+├──────── ChromaDB
+│
+└──────── Groq API (Qwen 3.6 27B)
+
+
+
 
 ---
 
 # Authentication System
 
-Authentication is entirely cookie based.
+Authentication is entirely cookie-based.
 
 The frontend never stores JWTs inside localStorage or sessionStorage.
 
-The backend sets:
+The backend manages authentication using:
 
 - HttpOnly Access Token Cookie
 - HttpOnly Refresh Token Cookie
 
-The browser automatically sends these cookies on authenticated requests.
+The browser automatically includes these cookies on authenticated requests.
 
-Frontend communicates using:
-
-```
+Frontend communicates with the backend using:
 withCredentials: true
-```
+
+
+
 
 ---
 
 # Authentication Features
 
-Implemented features include:
+Implemented security features include:
 
 - JWT Access Tokens
 - Refresh Tokens
 - Refresh Token Rotation
-- Refresh Tokens stored as SHA-256 hashes
-- Argon2 password hashing
-- HttpOnly cookies
-- Automatic token refresh
-- Absolute session expiry
-- Account lockout
-- Exponential lock duration
-- Password change invalidates all sessions
-- Logout invalidates refresh tokens
-- Session binding using session_start timestamp
+- Refresh Tokens stored only as SHA-256 hashes
+- HttpOnly Cookies
+- Argon2 Password Hashing
+- Automatic Access Token Refresh
+- Absolute Session Expiry
+- Session Binding using session_start
+- Account Lockout
+- Exponential Lock Duration
+- Password Change Session Invalidation
+- Logout Session Invalidation
+
+Authentication state is managed entirely by the backend.
 
 ---
 
 # Session Management
 
-Access Token
+### Access Token
 
-- Short lifetime
+- Short-lived JWT
 - Used for every authenticated request
+- Automatically refreshed when expired
 
-Refresh Token
+### Refresh Token
 
 - Longer lifetime
-- Rotated every refresh request
 - Stored only as SHA-256 hash inside PostgreSQL
+- Rotated on every successful refresh
+- Never accessible from frontend JavaScript
 
-Absolute Session
+### Absolute Session
 
-- Maximum session lifetime
-- Cannot be extended by refresh token rotation
+Every login creates a fixed maximum session lifetime.
+
+Refresh token rotation extends access tokens but never extends the absolute session.
+
+Once the maximum session duration is reached, re-authentication is required.
 
 ---
 
 # Authorization (RBAC)
 
-Every authenticated user belongs to exactly one role.
+Every authenticated user belongs to exactly one application role.
 
 Supported roles:
 
@@ -155,85 +171,96 @@ Supported roles:
 - c-level
 - admin
 
-Each role is mapped to one or more document folders.
+Each role maps to predefined document folders.
 
 Examples:
 
 Finance
+
 → finance/
 
 HR
+
 → hr/
 → general/
 
 Employee
+
 → general/
 
 C-Level
+
 → finance/
 → hr/
 → engineering/
 → marketing/
 → general/
 
-Authorization is enforced before document retrieval begins.
+Admin
 
-Role is NEVER trusted from the JWT.
+→ Application Administration Only
 
-The backend always reloads the user's current role from PostgreSQL.
+The admin role intentionally manages users but is excluded from RAG document retrieval.
+
+Authorization is always enforced before retrieval begins.
+
+Role information is never trusted from the JWT and is always loaded from PostgreSQL.
 
 ---
 
 # RAG Pipeline
 
-The RAG pipeline performs the following steps:
+Every AI request follows the pipeline below:
 
-1. Authenticate user
-2. Verify session
-3. Read role from database
-4. Validate RBAC permissions
-5. Load role-specific ChromaDB
-6. Perform semantic search using MMR
-7. Build prompt
-8. Call Groq LLaMA
-9. Return answer with source documents
+1. Authenticate User
+2. Verify Session
+3. Load Current User
+4. Read Role from Database
+5. Validate RBAC Permissions
+6. Load Accessible Vector Databases
+7. Perform Semantic Search using MMR
+8. Build Context
+9. Query Groq (Qwen 3.6 27B)
+10. Return Answer with Sources
+
+Only authorized documents participate in retrieval.
 
 ---
 
 # Vector Database
 
-Separate ChromaDB databases are maintained per role.
+Separate ChromaDB vector stores are maintained according to RBAC permissions.
 
 Examples:
+finance
+engineering
+marketing
+hr
+general
 
-```
-chroma_db_finance
-chroma_db_hr
-chroma_db_engineering
-...
-```
 
-Vector databases are automatically rebuilt whenever source documents change.
 
-File fingerprinting is used to detect changes.
+
+
+Document fingerprints are used to detect modifications and automatically rebuild vector databases when required.
 
 ---
 
 # Embeddings
 
 Embedding model:
-
-```
 all-MiniLM-L6-v2
-```
 
-Embedding model is loaded once using the Singleton pattern.
+
+
+
+The embedding model is loaded once using a Singleton pattern to minimize initialization overhead.
 
 ---
 
 # Retrieval Strategy
 
-Document retrieval uses:
+Semantic retrieval uses:
 
 Maximal Marginal Relevance (MMR)
 
@@ -242,44 +269,53 @@ Configuration:
 - fetch_k = 30
 - k = 10
 
-This improves diversity of retrieved document chunks.
+This improves diversity while reducing redundant document chunks.
 
 ---
 
 # Semantic Collision Prevention
 
-Every document chunk is prepended with metadata before embedding.
+To reduce semantic collisions between similar documents, metadata is prepended before embedding.
 
 Metadata includes:
 
-- Document name
-- Document type
+- Document Name
+- Document Type
+- Department
 - Quarter
 - Year
 
-This reduces collisions between semantically similar documents (for example Q1 vs Q4 reports).
+This improves retrieval accuracy for documents with similar content.
 
 ---
 
 # Database
 
-Database:
+Primary Database:
 
 PostgreSQL
 
-Connection pooling:
+Responsibilities:
+
+- Users
+- Roles
+- Password Hashes
+- Refresh Token Hashes
+- Failed Login Attempts
+- Account Lock Information
+- Session Start Timestamp
+
+Connection Pool:
 
 psycopg2 SimpleConnectionPool
 
-All modules share one centralized connection pool.
+Every backend module shares the same centralized connection pool.
 
 ---
 
 # Frontend Architecture
 
-Frontend follows this structure:
-
-```
+The frontend follows the architecture below:
 Pages
 
 ↓
@@ -301,13 +337,62 @@ Axios
 ↓
 
 FastAPI
-```
 
-Pages never communicate directly with Axios.
 
-Networking is centralized inside the services layer.
 
-Authentication state is centralized inside AuthContext.
+
+
+Responsibilities:
+
+Pages
+
+- UI
+- User Interaction
+
+Hooks
+
+- Session Verification
+
+Context
+
+- Authentication State
+
+Services
+
+- API Communication
+
+Axios
+
+- Cookie-Based Authentication
+- Automatic Refresh
+- Request Retry
+
+Networking remains centralized inside the services layer.
+
+---
+
+# Frontend Features
+
+Implemented functionality includes:
+
+- Login
+- Logout
+- Dashboard
+- Chat
+- Home Dataset Viewer
+- Dashboard Dataset Viewer (RBAC Protected)
+- Set Password
+- Change Password
+- Admin Create User
+- Protected Routes
+- Session Verification
+- Automatic Token Refresh
+- Per-user Chat History
+- Chat Persistence
+- Document Viewing
+- Authentication Context
+
+The remaining frontend work focuses primarily on UI/UX improvements and responsive styling.
 
 ---
 
@@ -315,17 +400,16 @@ Authentication state is centralized inside AuthContext.
 
 Axios automatically:
 
-- sends HttpOnly cookies
-- refreshes expired access tokens
-- retries failed requests after refresh
+- Sends HttpOnly Cookies
+- Refreshes Expired Access Tokens
+- Retries Failed Requests
+- Prevents Concurrent Refresh Requests
 
-Only one refresh request may run at a time.
-
-Concurrent requests share the same refresh operation.
+Frontend pages never communicate directly with Axios.
 
 ---
 
-# Current Implementation Status
+# Current Project Status
 
 Backend
 
@@ -335,11 +419,15 @@ Authentication
 
 ✅ Complete
 
-Authorization
+Authorization (RBAC)
 
 ✅ Complete
 
 RAG Pipeline
+
+✅ Complete
+
+PostgreSQL Integration
 
 ✅ Complete
 
@@ -359,6 +447,10 @@ Dashboard
 
 ✅ Complete
 
+Dataset Viewer
+
+✅ Complete
+
 Chat
 
 ✅ Complete
@@ -367,12 +459,31 @@ Login
 
 ✅ Complete
 
-Remaining frontend work:
+Set Password
 
-- Set Password page
-- Change Password page
-- Admin page
-- UI styling
+✅ Complete
+
+Change Password
+
+✅ Complete
+
+Admin User Creation
+
+✅ Complete
+
+End-to-End Authentication Testing
+
+✅ Complete
+
+End-to-End Functional Testing
+
+✅ Complete
+
+Remaining Work
+
+- UI/UX Styling
+- Responsive Design
+- Visual Polish
 
 ---
 
@@ -380,21 +491,27 @@ Remaining frontend work:
 
 This project intentionally follows a modular architecture.
 
-Important design decisions:
+Core design principles:
 
-- Keep backend modules separated.
-- Never trust roles stored in JWT.
-- Never store JWTs inside localStorage.
-- Always use HttpOnly cookies.
-- Networking belongs inside services/.
+- Authentication and Authorization remain independent.
+- Never trust roles stored inside JWTs.
+- Always use HttpOnly Cookies.
+- Never store JWTs inside localStorage or sessionStorage.
+- Networking belongs inside the Services layer.
 - Authentication state belongs inside Context.
-- Pages should primarily contain UI logic.
-- Avoid tightly coupling backend modules.
+- Pages primarily contain UI logic.
+- Preserve modular backend components.
+- Keep API communication centralized.
+- Prefer readability and maintainability over unnecessary abstractions.
 
 ---
 
 # Purpose of this Document
 
-This document provides enough architectural context for another developer or AI assistant to understand the complete project without reading every source file.
+This document provides a high-level overview of the complete Role-Based AI Assistant architecture.
 
-Detailed information about endpoints, authentication flow, folder structure, and frontend implementation is documented separately inside the docs/ directory.
+It is intended to help developers and AI assistants quickly understand the project's structure, authentication model, authorization strategy, frontend architecture, and retrieval pipeline without reading the entire codebase.
+
+Detailed information regarding endpoints, authentication flow, folder structure, frontend implementation, and system architecture is documented separately within the `docs/` directory.
+
+

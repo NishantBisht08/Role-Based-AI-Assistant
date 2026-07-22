@@ -1,12 +1,10 @@
 # API_REFERENCE.md
 
-# Important: 
+# Important
 
-This document describes the API contract. Maintain request/response formats unless there is an intentional API version change. Frontend and backend are designed around these endpoint contracts.
+This document describes the API contract for the Role-Based AI Assistant.
 
-# API Reference
-
-This document describes every backend endpoint exposed by the Role-Based AI Assistant.
+Unless an intentional API version change is made, request/response formats should be preserved to maintain compatibility between the frontend and backend.
 
 Base URL (Development)
 
@@ -18,7 +16,7 @@ All request and response bodies use JSON unless otherwise specified.
 
 Authentication is handled using HttpOnly cookies.
 
-The frontend communicates using:
+The frontend communicates with the backend using:
 
 ```
 withCredentials: true
@@ -34,7 +32,7 @@ withCredentials: true
 
 Authenticate an existing user.
 
-Authentication Required:
+Authentication Required
 
 ❌ No
 
@@ -43,7 +41,7 @@ Request
 ```json
 {
     "emp_id": "emp001",
-    "new_password": "password123"
+    "password": "password123"
 }
 ```
 
@@ -61,6 +59,7 @@ Side Effects
 - Creates Refresh Token
 - Stores Refresh Token Hash
 - Sets HttpOnly Cookies
+- Initializes authenticated session
 
 Possible Errors
 
@@ -78,7 +77,7 @@ Possible Errors
 
 Returns the currently authenticated user.
 
-Authentication Required:
+Authentication Required
 
 ✅ Yes
 
@@ -106,7 +105,8 @@ Used by:
 
 - AuthContext
 - Dashboard
-- Session verification
+- Session Verification
+- Protected Routes
 
 ---
 
@@ -114,7 +114,7 @@ Used by:
 
 Refresh an expired Access Token.
 
-Authentication Required:
+Authentication Required
 
 Refresh Token Cookie
 
@@ -135,11 +135,21 @@ Side Effects
 - Generates new Access Token
 - Generates new Refresh Token
 - Rotates Refresh Token
-- Updates cookies
+- Updates HttpOnly Cookies
 
-Called automatically by the Axios interceptor.
+Automatically called by the Axios response interceptor.
 
-Frontend should never call this directly under normal operation.
+Frontend pages should never call this endpoint directly.
+
+Possible Errors
+
+```
+401 Refresh token missing
+
+401 Invalid or expired refresh token
+
+500 Internal server error
+```
 
 ---
 
@@ -166,8 +176,8 @@ Response
 Side Effects
 
 - Deletes Refresh Token Hash
-- Resets session_start
-- Clears cookies
+- Resets Session
+- Clears Authentication Cookies
 
 ---
 
@@ -177,7 +187,7 @@ Side Effects
 
 ## POST /set-password
 
-Used only by first-time users.
+Used only for first-time users.
 
 Authentication Required
 
@@ -204,13 +214,13 @@ Purpose
 
 Initial password setup.
 
-Can only be used once.
+Can only be performed once.
 
 ---
 
 ## POST /change-password
 
-Changes the current password.
+Changes the current user's password.
 
 Authentication Required
 
@@ -221,7 +231,7 @@ Request
 ```json
 {
     "current_password": "oldPassword",
-    "new_password": "newPassword"
+    "new_password": "newPassword123"
 }
 ```
 
@@ -235,14 +245,14 @@ Response
 
 Side Effects
 
-- Updates Argon2 password hash
+- Updates Argon2 Password Hash
 - Deletes Refresh Token
-- Invalidates all sessions
-- Requires user to login again
+- Invalidates Existing Sessions
+- Forces User Login
 
 ---
 
-# RAG Endpoint
+# AI Endpoint
 
 ---
 
@@ -266,7 +276,7 @@ Response
 
 ```json
 {
-    "answer": "Employees are allowed ...",
+    "answer": "...",
     "sources": [
         "engineering_policy.pdf",
         "employee_handbook.pdf"
@@ -276,16 +286,20 @@ Response
 
 Purpose
 
-Main RAG endpoint.
+Main Retrieval-Augmented Generation (RAG) endpoint.
 
-Pipeline:
+Pipeline
 
 ```
-Authenticate
+Authenticate User
 
 ↓
 
 Verify Session
+
+↓
+
+Load Current User
 
 ↓
 
@@ -297,7 +311,7 @@ Determine Accessible Folders
 
 ↓
 
-MMR Retrieval
+Semantic Retrieval (MMR)
 
 ↓
 
@@ -305,7 +319,7 @@ Prompt Construction
 
 ↓
 
-Groq LLaMA
+Groq Qwen 3.6 27B
 
 ↓
 
@@ -317,14 +331,56 @@ Possible Errors
 ```
 401 Unauthorized
 
-403 Account Locked
+403 Forbidden
 
-500 Internal Error
+500 Internal Server Error
 ```
 
 ---
 
-# Admin Endpoints
+# Dataset Endpoints
+
+---
+
+## GET /dataset
+
+Returns the list of available documents.
+
+Authentication
+
+Depends on endpoint usage.
+
+Behavior
+
+- Home page returns the public dataset.
+- Dashboard returns only documents accessible to the authenticated user's role.
+
+Purpose
+
+Used by the Dataset page to display available documents.
+
+---
+
+## GET /document/{document_id}
+
+Returns the contents of a selected document.
+
+Authentication
+
+Depends on endpoint usage.
+
+Behavior
+
+- Public documents are accessible from the Home page.
+- Protected documents require authentication and RBAC validation.
+
+Purpose
+
+Used by the Dataset document viewer.
+
+---
+
+# Administration Endpoints
 
 ---
 
@@ -356,7 +412,13 @@ Response
 
 Purpose
 
-Administrative user provisioning.
+Administrative employee provisioning.
+
+Validation
+
+- Duplicate Employee ID Detection
+- Role Validation
+- Admin-only Access
 
 ---
 
@@ -368,7 +430,9 @@ Authentication relies on:
 
 - HttpOnly Cookies
 - Axios withCredentials
-- Automatic refresh interceptor
+- Automatic Token Refresh
+- Refresh Token Rotation
+- Session Verification
 
 ---
 
@@ -379,7 +443,7 @@ Authentication relies on:
 
 201 Resource Created
 
-400 Invalid Request
+400 Bad Request
 
 401 Unauthorized
 
@@ -392,15 +456,11 @@ Authentication relies on:
 
 ---
 
-# Frontend Usage
+# Frontend Service Layer
 
-The frontend communicates only through:
+The frontend communicates with the backend exclusively through the services layer.
 
-```
-services/auth.js
-```
-
-Available functions:
+Available service functions:
 
 ```
 login()
@@ -412,19 +472,19 @@ getCurrentUser()
 refresh()
 
 askQuestion()
-```
 
-Future additions:
-
-```
 setPassword()
 
 changePassword()
 
 createUser()
+
+getDataset()
+
+getDocument()
 ```
 
-Pages never communicate with Axios directly.
+Pages never communicate directly with Axios.
 
 Networking remains centralized inside the services layer.
 
@@ -436,5 +496,6 @@ Networking remains centralized inside the services layer.
 - Refresh Tokens are automatically rotated.
 - Authorization is enforced before document retrieval.
 - Role information is always loaded from PostgreSQL.
-- HttpOnly cookies are required for every authenticated request.
-- Axios automatically retries requests after successful token refresh.
+- Authentication uses HttpOnly cookies exclusively.
+- Axios automatically retries failed requests after successful token refresh.
+- Authentication and authorization remain separate concerns.
