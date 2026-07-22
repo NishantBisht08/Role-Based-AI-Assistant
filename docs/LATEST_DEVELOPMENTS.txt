@@ -101,4 +101,49 @@ UI/UX styling and responsiveness
 
 The backend architecture should be treated as stable. 
 Avoid architectural refactoring unless explicitly requested. 
-Focus on completing the remaining frontend pages, integrating the existing backend endpoints, and improving the user interface while preserving the existing architecture.
+Focus on completing the remaining frontend pages, integrating the existing backend endpoints, 
+and improving the user interface while preserving the existing architecture.
+
+
+Work done most recently:
+
+
+Dataset Integration
+
+1. Public Dataset page implemented on the Home page.
+2. Protected Dashboard Dataset page implemented with role-based document visibility.
+3. Added backend dataset endpoints for document listing and document retrieval.
+4. Created dedicated endpoints for both public and RBAC-protected dataset access.
+5. React services integrated with all dataset endpoints.
+6. Document viewer implemented with open/close functionality.
+7. Dashboard Dataset now displays only documents accessible to the logged-in user's role.
+8. Public Dataset remains accessible to all visitors for demonstration purposes.
+9. Dataset functionality verified against backend RBAC rules.
+
+Example Questions
+
+1. Integrated example questions into the Chat page.
+2. Converted the original text-based example questions into a structured JSON format.
+3. Created reusable React components for rendering example questions.
+4. Added quick-select functionality allowing users to populate the chat input with a single click.
+5. Improved onboarding experience by providing suggested prompts for first-time users.
+
+Manual Testing & Verification
+
+1. Performed comprehensive end-to-end manual testing across the application.
+2. Verified authentication, authorization, session management, and RBAC workflows.
+3. Tested route protection for authenticated and unauthenticated users.
+4. Verified Set Password, Login, Change Password, Logout, and Create User flows.
+5. Tested progressive account lockout behaviour.
+6. Verified automatic access token refresh and absolute session expiry.
+7. Confirmed frontend and backend validation for all major authentication workflows.
+8. Verified role-based document access for all supported roles.
+9. Confirmed chat history persistence, cleanup on logout, and conversation limits.
+10. Documented all test cases in a dedicated Manual Testing Report.
+
+Documentation
+
+1. Updated API reference documentation.
+2. Updated authentication flow documentation.
+3. Added manual testing documentation.
+4. Updated project status and development documentation to reflect the completed backend and frontend implementation.
