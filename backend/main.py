@@ -18,6 +18,7 @@ import time  #used for session tracking and lock checks
 
 #from backend.rag_engine import ask_question          # Your existing RAG function  
 from backend.shared_cons import connection_pool
+from backend.rag_engine import ask_question
 
 from backend.auth import (           #importing all the functions defined in the auth folder
     authenticate_user,
@@ -305,7 +306,7 @@ class QueryRequest(BaseModel):
         max_length=2000
     )
     
-'''    
+
 @app.post("/ask")  #we click the ask button
 def ask_ai(request: Request, query: QueryRequest):   #defining the ask endpoint here, user provides token and question
     
@@ -364,7 +365,7 @@ def ask_ai(request: Request, query: QueryRequest):   #defining the ask endpoint 
     # This function performs RBAC (Role Based Authentication Checks), retrieves documents, calls LLM, and returns answer
     result = ask_question(role, question)
     
-    return result  #Return the result (answer + sources) as HTTP response to the client '''
+    return result  #Return the result (answer + sources) as HTTP response to the client 
     
     
     
