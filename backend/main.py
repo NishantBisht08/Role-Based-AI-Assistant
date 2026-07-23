@@ -1,21 +1,59 @@
-from fastapi import FastAPI, HTTPException   # FastAPI framework, HTTPException for error responses
-from pydantic import BaseModel               # Used to define request body structure (JSON input)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi import Depends
+from backend.rag_engine.rbac import ROLE_FOLDERS
+
+# Document service for listing dataset documents
+from backend.document_service.service import (
+    list_all_documents,
+    list_role_documents,
+    get_document,
+    get_public_document,
+)
+
+from fastapi import FastAPI, HTTPException, Request   # FastAPI framework, HTTPException for error responses
+from pydantic import BaseModel, Field               # Used to define request body structure (JSON input)
+
+import time  #used for session tracking and lock checks
 
 from backend.rag_engine import ask_question          # Your existing RAG function
-from backend.auth import authenticate_user, create_access_token, verify_token   # NEW: Import auth functions
-from backend.auth import create_refresh_token, get_user, update_user
-import time  #used for session tracking and lock checks
-from dotenv import load_dotenv #loads environment file into the environment
-import os
+from backend.shared_cons import connection_pool
+
+from backend.auth import (           #importing all the functions defined in the auth folder
+    authenticate_user,
+    create_access_token,
+    verify_token,
+    create_refresh_token,
+    refresh_access_token,
+    logout_user,
+    get_user,
+    update_user,
+    set_user_password,
+    change_user_password,
+    get_current_user,
+)
+
+from backend.auth.config import ABSOLUTE_SESSION_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
+
+from backend.auth.config import CLIENT_URL
 
 app = FastAPI()                              # Create FastAPI app
 
-# This reads our .env file and store values into  environment
-load_dotenv()
+app.add_middleware(
+    CORSMiddleware,
 
-ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS", "30"))
+    allow_origins=[CLIENT_URL],
+
+    allow_credentials=True,
+
+    allow_methods=["*"],
+
+    allow_headers=["*"],
+)
 
 ALLOWED_ROLES = {"admin", "hr", "engineering", "employee", "marketing", "finance", "c-level"} #List for allowed folders
+
+
 
 
 # NEW: Model for login request body
@@ -29,6 +67,86 @@ class LoginRequest(BaseModel):
 class QueryRequest(BaseModel):
     token: str
     question: str
+    
+    
+
+# ── Public Dataset Endpoint ───────────────────────────────────────────────────
+# Returns metadata for every document in the dataset.
+# This endpoint is public and is used by the Home page Dataset Viewer.
+@app.get("/dataset")
+def get_dataset():
+
+    return {
+        "documents": list_all_documents()
+    }
+    
+
+# ── Role-Based Dataset Endpoint ───────────────────────────────────────────────
+# Returns only the documents the authenticated user is allowed to access.
+# This endpoint is used by the Dashboard Dataset Viewer.
+
+@app.get("/documents")
+def get_documents(current_user: dict = Depends(get_current_user)):
+    
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )    
+
+    return {
+             "documents": list_role_documents(current_user["role"])
+           }
+    
+
+# ── Get Document Endpoint ─────────────────────────────────────────────────────
+# Returns the contents of a requested document after verifying RBAC permissions.
+# Used by the frontend Dataset Viewer to fetch and display document contents.
+
+@app.get("/documents/{document_id}")
+def get_document_content(document_id: str, current_user: dict = Depends(get_current_user) ):
+    
+    if not current_user:
+            raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+
+    document = get_document(
+        document_id,
+        current_user["role"]
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found or access denied."
+        )
+
+    return document
+
+
+
+# Returns the contents of a single document from the public dataset.
+# This endpoint is intentionally public so visitors can explore
+# every document from the Home page.
+@app.get("/dataset/{document_id}")
+
+def public_document(document_id: str):
+
+    # Retrieve the requested document.
+    document = get_public_document(document_id)
+
+    # Return 404 if the document doesn't exist.
+    if document is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found."
+        )
+
+    return document
+
 
 
 # NEW: Login endpoint  (When the user hits login)
@@ -72,25 +190,98 @@ def login(request: LoginRequest):
     refresh_token = create_refresh_token(emp_id) #We call creeate_refresh function and  pass the emp_id as parameter to create_refresh function defined in auth file, which creates and returns the refresh token to us
 
     # Send token back to user, "We send this data as an HTTP response back to the client"
-    return { 
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"  #Bearer = whoever holds the token is the user                                          It tells the client how to use the token, typically indicating it should be sent as a Bearer token in the Authorization header.
-           }
+    
+    response = JSONResponse(
+           content={
+                      "message": "Login successful"
+                   }
+               )
+
+    response.set_cookie(
+                    key="access_token",
+                    value=access_token,
+                    httponly=True,
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
+                    max_age=int(ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+                )
+
+    response.set_cookie(
+                    key="refresh_token",
+                    value=refresh_token,
+                    httponly=True,
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
+                    max_age=int(REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
+                   )
+
+    return response
+
+# Returns information about the currently logged-in user
+@app.get("/me")
+def get_me(request: Request):
+
+    # Authenticate the user using the HttpOnly cookie
+    user = get_current_user(request)
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+
+    return {
+        "emp_id": user["emp_id"],
+        "name": user["name"],
+        "role": user["role"],
+        "accessible_folders": ROLE_FOLDERS.get(user["role"], []) #if folder is empty, return nothing
+    }
+    
     
 
-class RefreshRequest(BaseModel):
-    refresh_token: str
+
     
 @app.post("/refresh")   # called when frontend requests token refresh 
-def refresh(request: RefreshRequest):      #defining refresh api
-    from backend.auth import refresh_access_token
-    tokens = refresh_access_token(request.refresh_token)
+def refresh(request: Request):      #defining refresh api
+    
+    refresh_token = request.cookies.get("refresh_token")
+    
+    if not refresh_token:
+        raise HTTPException(
+        status_code=401,
+        detail="Refresh token missing"
+    )
+    
+    tokens = refresh_access_token(refresh_token)
 
     if not tokens:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    
+    response = JSONResponse(
+           content={
+                      "message": "Token refreshed successfully"
+                   }
+               )
 
-    return tokens  #shows both tokens to the user as http response, visible on frontend
+    response.set_cookie(
+                    key="access_token",
+                    value=tokens["access_token"],
+                    httponly=True,
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
+                    max_age=int(ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+                )
+
+    response.set_cookie(
+                    key="refresh_token",
+                    value=tokens["refresh_token"],
+                    httponly=True,
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
+                    max_age=int(REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
+                   )
+
+    return response  # Sends the new HttpOnly cookies back to the browser
     
 '''# Client sends refresh token (string) to this endpoint
 # This endpoint is called by frontend when access token expires (not a UI button defined here)
@@ -104,13 +295,29 @@ def refresh(request: RefreshRequest):      #defining refresh api
 # The function returns the new tokens back to main.py
 
 # If validation fails → raise HTTPException (401 Unauthorized)
-# If successful → return new tokens as HTTP response (JSON) to the client(user)'''
+# If successful → return new tokens as HTTP response (JSON) to the client(user)''' 
+
+
+class QueryRequest(BaseModel):
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000
+    )
     
 @app.post("/ask")  #we click the ask button
-def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provides token and question
+def ask_ai(request: Request, query: QueryRequest):   #defining the ask endpoint here, user provides token and question
+    
+    access_token = request.cookies.get("access_token")  #reading JWT token from browser 
+
+    if not access_token:
+              raise HTTPException(
+              status_code=401,
+              detail="Access token missing"
+            )
     
     # NEW: Verify token and extract payload from JWT, verify function is called here and executes in auth.py file
-    payload = verify_token(request.token) #We pass access token as argument, the function returns payload which contains emp_id, role and the expiry date of the token
+    payload = verify_token(access_token) #We pass access token as argument, the function returns payload which contains emp_id, role and the expiry date of the token
 
     # If token invalid or expired → error is shown to user
     if not payload:
@@ -143,32 +350,60 @@ def ask_ai(request: QueryRequest):   #defining the ask endpoint here, user provi
 
     # IMPORTANT: # Get role from database (do NOT trust role from JWT for security reasons), also if admin changed user's role, so we are checking to make sure the role is correct 
     role = user["role"]
+    
+    question = query.question.strip()
+    
+    if not question:
+        raise HTTPException(
+        status_code=400,
+        detail="Question cannot be empty."
+    )
 
     # Pass user's role and the question
     # This function performs RBAC (Role Based Authentication Checks), retrieves documents, calls LLM, and returns answer
-    result = ask_question(role, request.question) 
+    result = ask_question(role, question)
     
     return result  #Return the result (answer + sources) as HTTP response to the client
     
-class LogoutRequest(BaseModel):
-    refresh_token: str
+    
     
 #When logout endpoint is called
 @app.post("/logout")
-def logout(request: LogoutRequest):
-    from backend.auth import logout_user
+def logout(request: Request):
+    
+    refresh_token = request.cookies.get("refresh_token")
+    
+    if not refresh_token:
+        raise HTTPException(
+        status_code=401,
+        detail="Refresh token missing"
+    )
 
     #we call the logout function and it executes in auth.py
     #on successful logout, true is returned and on unsuccessful logout, false is returned, and we store it in result
-    result = logout_user(request.refresh_token)   
+    result = logout_user(refresh_token)   
 
     #if logout is unsuccessful
     if not result: 
        raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     #if logout is successful
-    return {"message": "Logged out successfully"}
-
+    response = JSONResponse(
+            content={
+                     "message": "Logged out successfully"
+                    }
+                )
+    
+    response.delete_cookie(
+             key="access_token"
+         )
+     
+    response.delete_cookie(
+             key="refresh_token"
+         )
+    
+    return response 
+    
 
 
 #End points for admin
@@ -179,38 +414,29 @@ class CreateUserRequest(BaseModel):
     
 # if admin wants to add a new user
 @app.post("/admin/create-user")
-def create_user(request: CreateUserRequest, token: str):
-    from backend.auth import verify_token
-    from backend.shared_cons import connection_pool
+def create_user(request: CreateUserRequest, 
+                current_user = Depends(get_current_user)
+                ):
 
-    payload = verify_token(token)
+    if not current_user:
+        raise HTTPException(
+        status_code=401,
+        detail="Not authenticated"
+    )
+        
+    if current_user["role"] != "admin":
+        raise HTTPException(
+        status_code=403,
+        detail="Not authorized"
+    )
 
-    #checking if admin's jwt is valid or not
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    #  Extract admin's identity(emp_id which is admin) from JWT
-    emp_id_from_token = payload["sub"].lower()
-
-    #now we are checking the db to ensure if this emp_id (that we extracted from jwt) exist or not in db
-    user = get_user(emp_id_from_token)  #so user contains all the fields of emp_id=admin in db
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    emp_id = request.emp_id.strip().lower()  #converting new emp_id provided by admin of the new user to lowercase
     
-    # Fetch admin's role from DB (NOT JWT)
-    if user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    #Session binding check, If Admin has logged out, he should not be able to create_new_user
-    token_session = payload.get("session_start")
-    if token_session != user.get("session_start"):
-            raise HTTPException(status_code=401, detail="Session expired. Please login again.")
-
-    # Lock check, If Admin's account is locked, jwt shouldn't be allowed to create new user
-    if user["lock_until"] > time.time():
-           raise HTTPException(status_code=403, detail="Account is locked")
-
-    emp_id = request.emp_id.lower()  #converting new emp_id provided by admin of the new user to lowercase
+    if not emp_id:
+        raise HTTPException(
+        status_code=400,
+        detail="Employee ID cannot be empty."
+    )
     
     #Removes spaces from start and end, ex: "  Sid " becomes "Sid" and "  " becomes ""
     name = request.name.strip()
@@ -218,13 +444,13 @@ def create_user(request: CreateUserRequest, token: str):
     if not name:
         raise HTTPException(status_code=400, detail="Name cannot be empty")
 
-    # Check if emp_id already exists in db
+    # Check if newly created user's emp_id already exists in db
     existing_user = get_user(emp_id)
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
 
     #getting the new user's role from admin
-    role = request.role.lower()
+    role = request.role.strip().lower()
 
     #checking if admin created user role exists or not 
     if role not in ALLOWED_ROLES:
@@ -275,8 +501,7 @@ class SetPasswordRequest(BaseModel):
     
 #user enters his emp_id and new_password to set
 @app.post("/set-password")
-def set_password(request: SetPasswordRequest, token: str = None):
-    from backend.auth import set_user_password, verify_token
+def set_password(request: SetPasswordRequest):
     
     #Empty password (like "" or "  ") is not allowed
     new_password = request.new_password.strip()
@@ -302,25 +527,8 @@ def set_password(request: SetPasswordRequest, token: str = None):
         return {"message": "Password set successfully"}
 
     # CASE 2: Password already exists → require authentication
-    #we first verify the jwt token provided by user
-    if not token:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    payload = verify_token(token)
-
-    #if token is invalid or expired, we throw error
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    #we extract emp_id of the logged in user from jwt
-    emp_id_from_token = payload["sub"].lower()
-
-    #we ensure that user can only set his OWN password and not someone else's
-    if emp_id_from_token != emp_id:
-        raise HTTPException(status_code=403, detail="Not authorized to set this password")
-
-    #if password already exists, we do not allow resetting here
-    raise HTTPException(status_code=400, detail="Password already set. Use change-password instead.")
+    
+    raise HTTPException(status_code=400, detail="Password already exists. Use change/password instead")   
 
 
 #endpoint for changing password
@@ -331,8 +539,19 @@ class ChangePasswordRequest(BaseModel):
     
 #user enters his emp_id, old password to verify and the new password he wants to replace the old password with
 @app.post("/change-password")
-def change_password(request: ChangePasswordRequest):
-    from backend.auth import change_user_password
+def change_password(request: ChangePasswordRequest, current_user = Depends(get_current_user)):
+    
+    if not current_user:
+        raise HTTPException(
+           status_code=401,
+           detail="Not authenticated"
+    )
+
+    if request.emp_id.strip().lower() != current_user["emp_id"].lower():
+        raise HTTPException(
+           status_code=403,
+           detail="You can only change your own password."
+    )
     
     #old password can't be replaced with Empty password 
     new_password = request.new_password.strip()
@@ -341,7 +560,7 @@ def change_password(request: ChangePasswordRequest):
 
     #if password is correct, success message is returned, else some kind of error message is returned
     result = change_user_password(
-        request.emp_id,
+        current_user["emp_id"],
         request.old_password,
         new_password
     )

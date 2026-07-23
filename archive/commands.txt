@@ -1,0 +1,106 @@
+ To run the fastapi server:
+
+ cd backend, becuz main.py file and other files are in backend folder and you can't run it directly from backend folder 
+ becuz imports in main.py mention backend folder as an import (ex: import backend.auth {.....})
+
+ on terminal, type: python -m uvicorn backend.main:app --reload
+
+http://127.0.0.1:8000/docs on browser
+
+
+
+
+
+few passwords = {
+    "sid": "S1d#Neptune77",
+    "nishant": "N1sh@nt_Wolf27",
+    "khushi": "Khushi@Nova88",
+    "kavya": "FireKavya$21",
+    "arjun": "DarkArjun$30",
+    "leo": "KingLeo$88"
+}
+
+
+
+Command to run psql shell
+
+psql -U app_user -d rbac_db -h localhost
+
+
+PostgreSql Driver installing command
+python -m pip install psycopg2-binary
+
+
+Starting the PostgreSQL (psql) Shell manually:
+1. Open SQL Shell (psql)
+Press Windows
+Search for SQL Shell (psql)
+Open it.
+
+2. Enter the connection details
+
+Server [localhost]:
+Press Enter (accepts localhost).
+
+Database [postgres]: rbac_db
+
+Type:
+rbac_db
+Press Enter.
+
+Port [5432]:
+Press Enter (default port).
+
+Username [postgres]: app_user
+
+Type:
+app_user
+
+Press Enter.
+
+Password for user app_user:
+
+Type your password. (1234 here)
+
+Note: The password will not be visible while typing.
+
+Press Enter.
+
+
+
+3. Successful connection
+If everything is correct, you'll see something like:
+
+psql (18.0)
+Type "help" for help.
+rbac_db=>
+
+The prompt
+rbac_db=>
+
+means you're now connected to the rbac_db database and can execute SQL commands.
+
+
+
+Useful Commands
+
+List all tables:
+\dt
+
+Describe a table:
+\d table_name
+
+View all records:
+SELECT * FROM table_name;
+
+List all databases:
+\l
+
+Connect to another database:
+\c database_name
+
+Clear the screen:
+\! cls
+
+Exit psql:
+\q

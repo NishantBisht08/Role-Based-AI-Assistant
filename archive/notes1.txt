@@ -1,0 +1,217 @@
+Q. 🔥 What is this value?
+   "lock_until": 1775115992.124367
+
+
+
+👉 This is a Unix timestamp
+
+🧠 What that means
+
+👉 It represents:
+
+Number of seconds since January 1, 1970 (UTC)
+
+🔥 Key points
+✅ It is:
+Global standard time
+Based on UTC (not local time)
+Same everywhere in the world
+❗ It is NOT:
+IST
+local system time
+formatted date
+🔥 Where does it come from?
+
+In your code:
+
+current_time = time.time()
+
+👉 time.time() returns:
+
+seconds since 1970 (UTC)
+
+
+
+Auth.py file
+
+🔥 Q2: What “environment” are we talking about?
+
+This is a very important concept
+
+🧠 What is “environment”?
+
+👉 It means:
+
+The runtime context where your program is running
+
+🔹 Example
+When your Python program runs:
+
+Your OS (Windows/Linux)
+    ↓
+Python process
+    ↓
+Environment variables (key-value pairs)
+
+
+
+🔹 Environment variables look like:
+SECRET_KEY=abc123
+PORT=8000
+
+👉 These exist outside your code
+
+🔥 What load_dotenv() does
+load_dotenv()
+
+👉 It takes:
+
+.env file
+
+and loads values into:
+
+process environment
+
+
+🔄 Flow
+.env file
+   ↓
+load_dotenv()
+   ↓
+OS / Python environment
+   ↓
+os.getenv("SECRET_KEY")
+
+
+🔹 Without load_dotenv()
+os.getenv("SECRET_KEY") → None ❌
+
+🔹 With load_dotenv()
+os.getenv("SECRET_KEY") → "421373..." ✅
+
+
+
+🔥 Simple analogy
+
+Think:
+
+.env = notebook of settings
+environment = memory of your running program
+load_dotenv() = copying notes into memory
+🔥 Why not hardcode instead?
+SECRET_KEY = "abc123" ❌
+
+Problems:
+
+insecure
+not flexible
+cannot change without editing code
+
+
+🔥 Why environment variables are used (important)
+
+✔ keep secrets outside code
+✔ different configs for dev/prod
+✔ easy to change
+
+🧠 One-line understanding
+
+“The environment refers to the runtime context of the program where key-value variables are stored, and load_dotenv loads variables from the .env file into that environment so they can be accessed using os.getenv.”
+
+
+
+HOW TO OPEN PSQL SHELL
+
+✅ What to do (step-by-step)
+1. Press Enter
+Server [localhost]:  ← just press Enter
+
+👉 Default = localhost (correct for you)
+
+2. Next prompt: Database
+
+You’ll see:
+
+Database [postgres]:
+
+👉 Type your DB name:
+
+rbac_db
+
+(or press Enter if you want default)
+
+3. Next: Port
+Port [5432]:
+
+👉 Press Enter (default is correct)
+
+4. Next: Username
+Username [postgres]:
+
+👉 Type:
+
+app_user
+
+(since your code uses that)
+
+5. Password
+Password:
+
+👉 Type:
+
+1234
+
+(you won’t see characters while typing)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

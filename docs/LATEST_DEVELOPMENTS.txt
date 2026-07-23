@@ -1,0 +1,149 @@
+Project Status Update (Latest)
+
+The backend architecture remains stable and feature-complete. The frontend has now completed integration of all core authentication and administration endpoints.
+
+RECENTLY COMPLETED
+
+1. Authentication
+2. Login flow completed.
+3. Logout flow completed.
+4. JWT access token authentication via HttpOnly cookies.
+5. Refresh token rotation implemented.
+6. Automatic access token refresh using Axios interceptors.
+7. Absolute session expiry implemented.
+8. Session verification on protected routes.
+9. Logout correctly clears backend session and frontend sessionStorage.
+10. Per-user authentication managed through AuthContext.
+
+
+Password Management
+
+1. Set Password page fully integrated.
+2. First-time users can initialize their password through the dedicated backend endpoint.
+3. Client-side validation implemented.
+4. Password confirmation validation implemented.
+5. Backend error handling integrated.
+6. Success flow redirects users to the Login page.
+7. Change Password page fully integrated.
+8. Connected to the backend /change-password endpoint.
+9. Current password verification supported.
+10. Password update immediately invalidates the current session.
+11. Users are automatically logged out after a successful password change, matching backend security behavior.
+
+
+
+Administration
+
+1. Admin-only Create User page implemented.
+2. Connected to the backend /admin/create-user endpoint.
+3. Role selection implemented using a dropdown.
+4. Client-side validation added.
+5. Backend validation for duplicate employee IDs and invalid roles integrated.
+6. Admin user creation intentionally prohibited.
+7. Successful user creation verified with PostgreSQL.
+
+
+Authorization Improvements
+
+1. Frontend now conditionally displays administration features only to users with the admin role.
+2. Application administration and RAG authorization are now treated as separate responsibilities.
+3. admin remains an application administrator and is intentionally excluded from RAG document access.
+4. /me endpoint updated to safely handle non-RAG roles without affecting existing RBAC functionality.
+
+
+Chat
+1. Chat endpoint fully integrated.
+2. Switched Groq model to Qwen 3.6 27B.
+3. Hidden reasoning enabled (no <think> output).
+4. Per-user chat history stored in sessionStorage.
+5. Chat restores automatically after browser refresh.
+6. Logout removes stored chat history.
+7. Character limit implemented.
+8. Conversation history automatically trimmed after maximum exchanges.
+
+Frontend
+
+1. Dashboard functional.
+2. Protected routing complete.
+3. Axios centralized with automatic refresh handling.
+4. AuthContext and ProtectedRoute completed.
+5. Session handling verified.
+6. Authentication, password management, and administration flows verified end-to-end.
+
+
+
+Static Review
+Performed another architecture review after integrating the remaining authentication endpoints.
+
+Verified:
+
+Authentication flow
+Refresh flow
+Password setup flow
+Password change flow
+Create user flow
+Admin authorization
+Secure cookie handling
+Session invalidation
+Backend endpoint integration
+RAG authorization separation
+PostgreSQL integration
+
+
+Remaining Functional Frontend Work
+
+Documents page
+Dataset page
+About page
+Demo Guide page
+UI/UX styling and responsiveness
+
+
+The backend architecture should be treated as stable. 
+Avoid architectural refactoring unless explicitly requested. 
+Focus on completing the remaining frontend pages, integrating the existing backend endpoints, 
+and improving the user interface while preserving the existing architecture.
+
+
+Work done most recently:
+
+
+Dataset Integration
+
+1. Public Dataset page implemented on the Home page.
+2. Protected Dashboard Dataset page implemented with role-based document visibility.
+3. Added backend dataset endpoints for document listing and document retrieval.
+4. Created dedicated endpoints for both public and RBAC-protected dataset access.
+5. React services integrated with all dataset endpoints.
+6. Document viewer implemented with open/close functionality.
+7. Dashboard Dataset now displays only documents accessible to the logged-in user's role.
+8. Public Dataset remains accessible to all visitors for demonstration purposes.
+9. Dataset functionality verified against backend RBAC rules.
+
+Example Questions
+
+1. Integrated example questions into the Chat page.
+2. Converted the original text-based example questions into a structured JSON format.
+3. Created reusable React components for rendering example questions.
+4. Added quick-select functionality allowing users to populate the chat input with a single click.
+5. Improved onboarding experience by providing suggested prompts for first-time users.
+
+Manual Testing & Verification
+
+1. Performed comprehensive end-to-end manual testing across the application.
+2. Verified authentication, authorization, session management, and RBAC workflows.
+3. Tested route protection for authenticated and unauthenticated users.
+4. Verified Set Password, Login, Change Password, Logout, and Create User flows.
+5. Tested progressive account lockout behaviour.
+6. Verified automatic access token refresh and absolute session expiry.
+7. Confirmed frontend and backend validation for all major authentication workflows.
+8. Verified role-based document access for all supported roles.
+9. Confirmed chat history persistence, cleanup on logout, and conversation limits.
+10. Documented all test cases in a dedicated Manual Testing Report.
+
+Documentation
+
+1. Updated API reference documentation.
+2. Updated authentication flow documentation.
+3. Added manual testing documentation.
+4. Updated project status and development documentation to reflect the completed backend and frontend implementation.

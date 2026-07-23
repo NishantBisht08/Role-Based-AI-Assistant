@@ -17,8 +17,7 @@ from .rbac import ROLE_FOLDERS, enforce_rbac
 from .vectorstore import get_or_build_vectorstore
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, "..", "..", ".env"))
-
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 # ── Step 8: Main function — tie everything together ───────────────────────────
 # This is the function called by FastAPI when a user asks a question.
@@ -117,14 +116,17 @@ ANSWER:"""
     try:
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # LLaMA 70B model on Groq
+            model="qwen/qwen3.6-27b",  # LLaMA 70B model on Groq
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,    # low = more factual, less creative
             max_tokens=1024,    # max length of the answer (~750 words)
+            reasoning_effort="none",
+            reasoning_format="hidden",
         )
         answer = response.choices[0].message.content.strip()
     except Exception as e:
-        answer = f"LLM call failed: {e}"
+         print(f"LLM Error: {e}")   # or use logging
+         answer = "Sorry, I couldn't generate a response. Please try again."
 
     # --- 6. Return answer + sources ---
     return {"answer": answer, "sources": sources}
