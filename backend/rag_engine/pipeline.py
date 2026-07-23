@@ -17,8 +17,7 @@ from .rbac import ROLE_FOLDERS, enforce_rbac
 from .vectorstore import get_or_build_vectorstore
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, "..", "..", ".env"))
-
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 # ── Step 8: Main function — tie everything together ───────────────────────────
 # This is the function called by FastAPI when a user asks a question.
