@@ -201,8 +201,8 @@ def login(request: LoginRequest):
                     key="access_token",
                     value=access_token,
                     httponly=True,
-                    secure=False,          # Change to True after HTTPS deployment
-                    samesite="lax",
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
                     max_age=int(ACCESS_TOKEN_EXPIRE_MINUTES * 60)
                 )
 
@@ -210,8 +210,8 @@ def login(request: LoginRequest):
                     key="refresh_token",
                     value=refresh_token,
                     httponly=True,
-                    secure=False,          # Change to True after HTTPS deployment
-                    samesite="lax",
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
                     max_age=int(REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
                    )
 
@@ -267,8 +267,8 @@ def refresh(request: Request):      #defining refresh api
                     key="access_token",
                     value=tokens["access_token"],
                     httponly=True,
-                    secure=False,          # Change to True after HTTPS deployment
-                    samesite="lax",
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
                     max_age=int(ACCESS_TOKEN_EXPIRE_MINUTES * 60)
                 )
 
@@ -276,8 +276,8 @@ def refresh(request: Request):      #defining refresh api
                     key="refresh_token",
                     value=tokens["refresh_token"],
                     httponly=True,
-                    secure=False,          # Change to True after HTTPS deployment
-                    samesite="lax",
+                    secure=True,          # Change to True after HTTPS deployment
+                    samesite="none",
                     max_age=int(REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
                    )
 
