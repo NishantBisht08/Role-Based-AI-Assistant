@@ -1,19 +1,18 @@
-import { StrictMode } from 'react'  //it checks for unsafe code, bugs, it doesn't exist in production only while we are writing code
-import { createRoot } from 'react-dom/client'   //gives react the html element where the application should live
-import './index.css'  //loads the global stylesheet, used by every page in our application
-import App from './App.jsx'  //imports our entire application
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
-//this line finds the div which is present inside index.html
-createRoot(document.getElementById('root')).render(  
-  <StrictMode>
-      <AuthProvider>
-            <App />
-      </AuthProvider>
-
-  </StrictMode>
-)
-//react then renders app inside that div
-
-
-
+// Application entry point — wraps the app with global providers.
+// AuthProvider manages authentication state; ThemeProvider handles light/dark mode.
+createRoot(document.getElementById("root")).render(
+    <StrictMode>
+        <ThemeProvider>
+            <AuthProvider>
+                <App />
+            </AuthProvider>
+        </ThemeProvider>
+    </StrictMode>
+);

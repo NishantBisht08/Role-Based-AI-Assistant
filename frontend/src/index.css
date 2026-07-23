@@ -1,0 +1,10 @@
+/**
+ * Novaris Global Stylesheet Entry Point
+ *
+ * Imports the design system layers in dependency order:
+ * variables → base → animations → components
+ */
+@import "./styles/variables.css";
+@import "./styles/base.css";
+@import "./styles/animations.css";
+@import "./styles/components.css";

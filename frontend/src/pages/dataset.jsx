@@ -1,124 +1,82 @@
+/**
+ * Dataset — Public dataset viewer (Home page access)
+ *
+ * Displays all documents as parchment papers (2-3 per row).
+ * Uses getDataset() and getPublicDocument() — no auth required.
+ */
 import { useEffect, useState } from "react";
-// Public Dataset APIs used by the Home page.
 import { getDataset, getPublicDocument } from "../services/auth";
+import PageContainer from "../components/layout/PageContainer";
+import ParchmentPaper from "../components/common/ParchmentPaper";
+import DocumentViewer from "../components/common/DocumentViewer";
 
+function Dataset() {
+    const [documents, setDocuments] = useState([]);
+    const [selectedDocument, setSelectedDocument] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-function Dataset()
-{
+    useEffect(() => {
+        async function loadDataset() {
+            try {
+                const data = await getDataset();
+                setDocuments(data.documents);
+            } catch (error) {
+                console.error("Failed to load dataset:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadDataset();
+    }, []);
 
-// Stores the list of documents returned by the backend
-const [documents, setDocuments] = useState([]);
-
-// Stores the currently selected document
-const [selectedDocument, setSelectedDocument] = useState(null);
-
-// Fetch the complete public dataset when the page loads
-useEffect(() => {
-
-    async function loadDataset() {
-
-        try {
-
-            const data = await getDataset();
-
-            setDocuments(data.documents);
-
-        } catch (error) {
-
-            console.error("Failed to load dataset:", error);
-
+    async function openDocument(document_id) {
+        if (selectedDocument?.id === document_id) {
+            setSelectedDocument(null);
+            return;
         }
 
+        try {
+            const data = await getPublicDocument(document_id);
+            setSelectedDocument(data);
+        } catch (error) {
+            console.error("Failed to load document:", error);
+        }
     }
 
-    loadDataset();
-
-}, []);
-
-
-// Fetches and displays the contents of the selected document.
-// The Dataset page initially loads only document metadata.
-// When a user clicks a document, the complete document is
-// retrieved from the backend.
-async function openDocument(document_id) {
-
-    // Close the document if it is already open.
-    if (selectedDocument?.id === document_id) {
-
-        setSelectedDocument(null);
-
-        return;
-
-    }
-
-    try {
-
-        // Request the full document from the public Dataset endpoint.
-        const data = await getPublicDocument(document_id);
-
-        // Store the selected document so its contents can be displayed.
-        setSelectedDocument(data);
-
-    } catch (error) {
-
-        console.error("Failed to load document:", error);
-
-    }
-
-}
-
-
-
-return (
-<main>
-
-    <h1>Dataset</h1>
-
-    {
-        documents.map((document) => (
-
-            <div key={document.id}>
-
-<button
-    type="button"
-    onClick={() => openDocument(document.id)}
->
-    {document.title}
-</button>
-
+    return (
+        <PageContainer wide>
+            <div className="section-header">
+                <h2>Dataset</h2>
+                <p>This is the complete dataset used in Novaris.</p>
             </div>
 
-        ))
-    }
+            {loading ? (
+                <div className="card-grid">
+                    {[1, 2, 3, 4, 5, 6].map((index) => (
+                        <div key={index} className="skeleton" style={{ height: "140px" }} />
+                    ))}
+                </div>
+            ) : (
+                <div className="parchment-grid">
+                    {documents.map((document) => (
+                        <ParchmentPaper
+                            key={document.id}
+                            title={document.title}
+                            onClick={() => openDocument(document.id)}
+                        />
+                    ))}
+                </div>
+            )}
 
-{
-    selectedDocument && (
-
-    <section>
-
-        <h2>{selectedDocument.title}</h2>
-
-        <pre>
-
-            {selectedDocument.content}
-
-        </pre>
-
-    </section>
-
-    )
+            {selectedDocument && (
+                <DocumentViewer
+                    title={selectedDocument.title}
+                    content={selectedDocument.content}
+                    onClose={() => setSelectedDocument(null)}
+                />
+            )}
+        </PageContainer>
+    );
 }
-
-</main>
-
-);
-
-
-}
-
-
-
-
-
 
 export default Dataset;

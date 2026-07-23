@@ -1,27 +1,25 @@
 import { Navigate } from "react-router-dom";
-
 import { useAuth } from "../contexts/AuthContext";
+import LoadingSpinner from "./ui/LoadingSpinner";
 
-
+/**
+ * ProtectedRoute — Route guard for authenticated pages
+ *
+ * Redirects unauthenticated users to /login.
+ * Shows a loading spinner while AuthContext initializes.
+ */
 function ProtectedRoute({ children }) {
+    const { user, loading } = useAuth();
 
-    const { user, loading } = useAuth();       //authentication state
-
-    if (loading) 
-        {
-
-          return <h2>Loading...</h2>;
-
-        }
+    if (loading) {
+        return <LoadingSpinner text="Verifying session..." />;
+    }
 
     if (!user) {
-
-            return <Navigate to="/login" replace />;
-
-         }
+        return <Navigate to="/login" replace />;
+    }
 
     return children;
-
 }
 
 export default ProtectedRoute;

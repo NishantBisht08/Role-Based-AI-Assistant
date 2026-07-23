@@ -1,158 +1,106 @@
+/**
+ * Login — Authentication page
+ *
+ * Centered glassmorphism card for Employee ID + password login.
+ * Preserves existing login flow: login() → getCurrentUser() → setUser → navigate.
+ */
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { login, getCurrentUser } from "../services/auth";
 import { useNavigate } from "react-router-dom";
+import { login, getCurrentUser } from "../services/auth";
 import { useAuth } from "../contexts/AuthContext";
-
+import AuthCard from "../components/layout/AuthCard";
+import Button from "../components/ui/Button";
 
 function Login() {
-
     const navigate = useNavigate();
     const { setUser } = useAuth();
 
-    // Stores the Employee ID entered by the user
     const [empId, setEmpId] = useState("");
-
-    // Stores the Password entered by the user
     const [password, setPassword] = useState("");
-
-    // Tracks whether a login request is in progress
     const [loading, setLoading] = useState(false);
-
-    // Stores any error message returned during login
     const [error, setError] = useState("");
 
-
-
     const handleLogin = async (event) => {
+        event.preventDefault();
+        setLoading(true);
+        setError("");
 
-    // Prevents the browser from refreshing the page
-    event.preventDefault();
-
-    // Show loading state and clear previous errors
-    setLoading(true);
-    setError("");
-
-    try {
-
-        // 1. Authenticate the user
-        await login(empId, password);
-
-        const currentUser = await getCurrentUser();
-
-        setUser(currentUser);
-
-        navigate("/dashboard");
-
-    }
-
-catch (err) {
-
-    console.log(err);
-
-    console.log(err.response);
-
-    console.log(err.message);
-
-    setError(
-
-        err.response?.data?.detail ||
-
-        "Something went wrong."
-
-    );
-
-}
-
-    finally {
-
-        setLoading(false);
-
-    }
-
-};
+        try {
+            await login(empId, password);
+            const currentUser = await getCurrentUser();
+            setUser(currentUser);
+            navigate("/dashboard");
+        } catch (err) {
+            setError(
+                err.response?.data?.detail || "Something went wrong."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-
-        <main>
-
-            <section>
-
-                <h2>Login</h2>
-
-                <p>
-                    Sign in using your Employee ID and password.
-                </p>
-
-                <form onSubmit={handleLogin}>
-
-                    <label htmlFor="empId">
+        <AuthCard
+            title="Welcome Back"
+            subtitle="Sign in to Novaris using your Employee ID and password."
+            footer={
+                <>
+                    First time here?{" "}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate("/set-password")}
+                    >
+                        Set Password
+                    </Button>
+                </>
+            }
+        >
+            <form onSubmit={handleLogin}>
+                <div className="form-group">
+                    <label className="form-label" htmlFor="empId">
                         Employee ID
                     </label>
-
                     <input
+                        className="form-input"
                         type="text"
                         id="empId"
                         value={empId}
                         onChange={(event) => setEmpId(event.target.value)}
                         placeholder="Enter Employee ID"
+                        autoComplete="username"
                     />
+                </div>
 
-                    <label htmlFor="password">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="password">
                         Password
                     </label>
-
                     <input
+                        className="form-input"
                         type="password"
                         id="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         placeholder="Enter Password"
+                        autoComplete="current-password"
                     />
+                </div>
 
-                    {
-                        error && (
+                {error && <p className="form-error">{error}</p>}
 
-                            <p>
-                                {error}
-                            </p>
-
-                        )
-                    }
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                    >
-
-                        {
-                            loading
-                                ? "Logging In..."
-                                : "Login"
-                        }
-
-                    </button>
-
-                </form>
-
-                <p>
-
-                    First time here?
-
-                    {" "}
-
-                    <Link to="/set-password">
-                        Set Password
-                    </Link>
-
-                </p>
-
-            </section>
-
-        </main>
-
+                <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    disabled={loading}
+                    style={{ width: "100%" }}
+                >
+                    {loading ? "Logging In..." : "Login"}
+                </Button>
+            </form>
+        </AuthCard>
     );
-
 }
 
 export default Login;
