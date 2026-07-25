@@ -15,7 +15,7 @@ def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
         # Lazy load to prevent Render boot timeout
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        # Load the model from HuggingFace (only happens once)
-        _embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+        # Load the model from FastEmbed (memory efficient ONNX runtime, no PyTorch needed)
+        _embedding_model = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
     return _embedding_model
