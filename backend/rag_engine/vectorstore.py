@@ -26,8 +26,11 @@ def get_or_build_vectorstore(role: str, folders: list, base_path: str):
     from langchain_community.vectorstores import Chroma
 
     embedding   = get_embedding_model()
-    DATA_DIR = os.environ.get("DATA_DIR", os.path.join(BASE_DIR, ".."))
-    persist_dir = os.path.join(DATA_DIR, f"chroma_db_{role}")  # e.g. chroma_db_finance, chroma_db_hr
+    # Render's project filesystem is read-only; use /tmp for writable storage
+    CHROMA_DIR = os.environ.get("CHROMA_DIR", os.path.join(BASE_DIR, ".."))
+    if not os.access(CHROMA_DIR, os.W_OK):
+        CHROMA_DIR = "/tmp"
+    persist_dir = os.path.join(CHROMA_DIR, f"chroma_db_{role}")  # e.g. chroma_db_finance, chroma_db_hr
     hash_file   = f"{persist_dir}/.hash" # where we save the fingerprint
     current_hash = compute_folder_hash(folders, base_path)
 
