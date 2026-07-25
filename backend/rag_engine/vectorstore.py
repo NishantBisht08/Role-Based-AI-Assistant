@@ -7,12 +7,6 @@
 import os
 import shutil    # for deleting folders when we need to rebuild ChromaDB
 
-# Splits large documents into smaller chunks so they fit in the LLM context
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-# ChromaDB — our vector database that stores document chunks as embeddings
-from langchain_community.vectorstores import Chroma
-
 from .embeddings import get_embedding_model
 from .document_loader import compute_folder_hash, load_documents
 
@@ -26,7 +20,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 #   - If data files haven't changed → load existing DB (fast)
 #   - If data files changed → wipe old DB and rebuild (accurate)
 
-def get_or_build_vectorstore(role: str, folders: list, base_path: str) -> Chroma:
+def get_or_build_vectorstore(role: str, folders: list, base_path: str):
+    # Lazy load heavy dependencies to prevent Render boot timeouts
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_community.vectorstores import Chroma
+
     embedding   = get_embedding_model()
     DATA_DIR = os.environ.get("DATA_DIR", os.path.join(BASE_DIR, ".."))
     persist_dir = os.path.join(DATA_DIR, f"chroma_db_{role}")  # e.g. chroma_db_finance, chroma_db_hr
