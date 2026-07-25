@@ -7,11 +7,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # This reads our .env file from the project root
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
-
 CLIENT_URL = os.getenv("CLIENT_URL")
-
-
-
+if CLIENT_URL and not CLIENT_URL.startswith("http"):
+    CLIENT_URL = f"https://{CLIENT_URL}"
 #This block loads configuration values from the .env file and stores them as variables used for JWT, token expiry, and security settings
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret_key_for_finsolve")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")

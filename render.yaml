@@ -12,7 +12,7 @@ services:
         fromService:
           type: web
           name: finsolve-frontend
-          property: url
+          property: host
 
   # 2. React Vite Frontend
   - type: web
@@ -25,4 +25,4 @@ services:
         fromService:
           type: web
           name: finsolve-backend
-          property: url
+          property: host
