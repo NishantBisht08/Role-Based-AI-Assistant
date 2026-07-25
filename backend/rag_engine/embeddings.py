@@ -9,6 +9,8 @@
 # We load it once and reuse it for all queries (singleton pattern).
 # Without this, the 90MB model would reload on every single query — very slow.
 
+import os
+
 _embedding_model = None  # starts as None, gets filled on first use
 
 def get_embedding_model():
