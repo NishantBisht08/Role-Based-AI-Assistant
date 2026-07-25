@@ -13,6 +13,9 @@ else:
 
 cur = conn.cursor()
 
+# Drop table to ensure old Argon2 hashes are wiped and replaced by Bcrypt
+cur.execute("DROP TABLE IF EXISTS users CASCADE;")
+
 # Create table if it doesn't exist
 cur.execute("""
 CREATE TABLE IF NOT EXISTS users (
