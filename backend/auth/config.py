@@ -28,4 +28,4 @@ LOCKOUT_RESET_HOURS = float(os.getenv("LOCKOUT_RESET_HOURS", "24"))
 # Use Argon2 for hashing
 #It creates a password hashing manager
 #"This object knows how to hash passwords and verify them using Argon2
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

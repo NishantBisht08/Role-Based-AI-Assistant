@@ -14,9 +14,14 @@ _embedding_model = None  # starts as None, gets filled on first use
 def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
-        # Lazy load to prevent Render boot timeout
-        from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-        # Load the model from FastEmbed (memory efficient ONNX runtime, no PyTorch needed)
-        # We explicitly set threads=1 to limit ONNX memory consumption which causes OOM on 512MB RAM servers
-        _embedding_model = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5", threads=1)
+        hf_token = os.getenv("HF_TOKEN")
+        if not hf_token:
+            raise ValueError("HF_TOKEN environment variable is missing! Please add it to Render.")
+        
+        from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+        # Hosted API embeddings: 0MB local memory footprint
+        _embedding_model = HuggingFaceInferenceAPIEmbeddings(
+            api_key=hf_token,
+            model_name="BAAI/bge-small-en-v1.5"
+        )
     return _embedding_model

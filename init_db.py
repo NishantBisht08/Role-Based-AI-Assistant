@@ -2,7 +2,7 @@ import os
 import psycopg2
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -53,23 +53,3 @@ conn.commit()
 cur.close()
 conn.close()
 print("Database initialized and seeded successfully!")
-
-print("\n--- Pre-building ChromaDB Vector Stores ---")
-# Pre-build vector stores so the first API request doesn't time out
-import sys
-import gc
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from backend.rag_engine.rbac import ROLE_FOLDERS
-from backend.rag_engine.vectorstore import get_or_build_vectorstore
-
-BASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-
-for role, folders in ROLE_FOLDERS.items():
-    try:
-        print(f"Pre-building for role: {role}")
-        get_or_build_vectorstore(role, folders, BASE_PATH)
-        gc.collect() # Force garbage collection to free memory between builds
-    except Exception as e:
-        print(f"Failed to build DB for {role}: {e}")
-
-print("Pre-building complete!\n")
