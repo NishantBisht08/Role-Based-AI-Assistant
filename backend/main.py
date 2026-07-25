@@ -52,6 +52,39 @@ def seed_database():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/keep-alive")
+def keep_alive():
+    """
+    Pings both the Neon PostgreSQL database and Pinecone Vector Database
+    to keep them active and prevent them from sleeping/pausing due to inactivity rules.
+    """
+    results = {"status": "alive"}
+    
+    # Ping Neon PostgreSQL
+    try:
+        conn = connection_pool.getconn()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        cur.close()
+        connection_pool.putconn(conn)
+        results["neon_postgres"] = "awake"
+    except Exception as e:
+        results["neon_postgres"] = f"error: {str(e)}"
+        
+    # Ping Pinecone
+    try:
+        import os
+        from pinecone import Pinecone
+        pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
+        index_name = os.environ.get("PINECONE_INDEX_NAME", "company-docs")
+        index = pc.Index(index_name)
+        stats = index.describe_index_stats()
+        results["pinecone"] = f"awake (namespaces: {list(stats.namespaces.keys())})"
+    except Exception as e:
+        results["pinecone"] = f"error: {str(e)}"
+        
+    return results
+
 app.add_middleware(
     CORSMiddleware,
 
