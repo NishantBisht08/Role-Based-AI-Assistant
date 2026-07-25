@@ -8,6 +8,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: finsolve-frontend
+          property: url
 
   # 2. React Vite Frontend
   - type: web
@@ -20,4 +25,4 @@ services:
         fromService:
           type: web
           name: finsolve-backend
-          property: host
+          property: url
