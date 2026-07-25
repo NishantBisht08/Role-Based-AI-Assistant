@@ -22,7 +22,4 @@ services:
     staticPublishPath: "./frontend/dist"
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: finsolve-backend
-          property: host
+        value: "https://finsolve-backend.onrender.com"
