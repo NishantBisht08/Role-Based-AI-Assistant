@@ -17,5 +17,6 @@ def get_embedding_model():
         # Lazy load to prevent Render boot timeout
         from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
         # Load the model from FastEmbed (memory efficient ONNX runtime, no PyTorch needed)
-        _embedding_model = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+        # We explicitly set threads=1 to limit ONNX memory consumption which causes OOM on 512MB RAM servers
+        _embedding_model = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5", threads=1)
     return _embedding_model
