@@ -1,4 +1,5 @@
 venv/
+.venv/
 __pycache__/
 .env
 chroma_db/
@@ -12,3 +13,7 @@ node_modules/
 # Build
 dist/
 build/
+
+#docs and old files
+docs/
+archive/
