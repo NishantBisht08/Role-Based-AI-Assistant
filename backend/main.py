@@ -363,10 +363,13 @@ def ask_ai(request: Request, query: QueryRequest):   #defining the ask endpoint 
 
     # Pass user's role and the question
     # This function performs RBAC (Role Based Authentication Checks), retrieves documents, calls LLM, and returns answer
-    result = ask_question(role, question)
-    
-    return result  #Return the result (answer + sources) as HTTP response to the client 
-    
+    try:
+        result = ask_question(role, question)
+        return result
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"Server Error: {str(e)}\n{error_details}")
     
     
 #When logout endpoint is called
