@@ -43,7 +43,7 @@ app = FastAPI()                              # Create FastAPI app
 app.add_middleware(
     CORSMiddleware,
 
-    allow_origins=[CLIENT_URL],
+    allow_origin_regex=r"https://.*\.onrender\.com",
 
     allow_credentials=True,
 
