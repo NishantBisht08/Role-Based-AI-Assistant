@@ -52,4 +52,22 @@ for emp_id, name, password, role in users:
 conn.commit()
 cur.close()
 conn.close()
-print("\nDatabase initialized and seeded successfully!")
+print("Database initialized and seeded successfully!")
+
+print("\n--- Pre-building ChromaDB Vector Stores ---")
+# Pre-build vector stores so the first API request doesn't time out
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from backend.rag_engine.rbac import ROLE_FOLDERS
+from backend.rag_engine.vectorstore import get_or_build_vectorstore
+
+BASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+for role, folders in ROLE_FOLDERS.items():
+    try:
+        print(f"Pre-building for role: {role}")
+        get_or_build_vectorstore(role, folders, BASE_PATH)
+    except Exception as e:
+        print(f"Failed to build DB for {role}: {e}")
+
+print("Pre-building complete!\n")
