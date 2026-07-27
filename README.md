@@ -23,7 +23,7 @@ The project demonstrates how modern AI applications can combine secure authentic
 
 ---
 
-## Why I Built This Project
+## Why We Built This Project
 
 Many AI chatbots can answer questions, but very few demonstrate how AI systems should operate inside an enterprise environment where document security is critical.
 
