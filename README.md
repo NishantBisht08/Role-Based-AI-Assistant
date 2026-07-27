@@ -90,6 +90,73 @@ Only authorized documents participate in retrieval.
 
 ---
 
+## 📸 Project Screenshots
+
+### 🏠 Home Page
+
+<img src="screenshots/image1.png" width="900"/>
+
+A modern landing page introducing Novaris, its core capabilities, platform features, interactive demo guide, and public dataset for visitors to explore without authentication.
+
+---
+
+### 🔐 Secure Login
+
+<img src="screenshots/image7.png" width="900"/>
+
+JWT-based authentication using HttpOnly cookies with secure session management and refresh token support.
+
+---
+
+### 📊 Dashboard
+
+<img src="screenshots/image8.png" width="900"/>
+
+Displays authenticated user information, assigned role, and quick access to AI chat, dataset viewer, and password management.
+
+---
+
+### 🤖 AI Chat (RAG)
+ 
+<img src="screenshots/image10.png" width="900"/>   
+
+Enterprise Retrieval-Augmented Generation (RAG) interface that answers questions exclusively from authorized company documents while enforcing Role-Based Access Control.
+
+---
+
+### 📜 Example Questions
+
+<img src="screenshots/image9.png" width="900"/>
+
+Built-in example prompts help users quickly explore the knowledge base without needing to invent their own queries.
+
+---
+
+### 📚 Public Dataset Viewer
+
+<img src="screenshots/image11.png" width="900"/>
+
+Browse the complete company dataset without authentication and open individual documents through an interactive document viewer.
+
+---
+
+### 💡 Interactive Knowledge Cards
+
+<img src="screenshots/image4.png" width="900"/>
+
+Clickable cards showcasing interesting facts about the platform while demonstrating interactive frontend components.
+
+---
+
+### 👨‍💻 Meet the Builders
+
+<img src="screenshots/image12.png" width="900"/>
+<img src="screenshots/image.png" width="900"/>
+
+Introduces the developers behind Novaris with a polished team section and project credits.
+
+---
+
 ### Frontend
 
 The frontend is built with React and focuses on simplicity, modularity, and secure communication with the backend.
@@ -215,73 +282,6 @@ AI Response
 - React frontend with centralized API communication
 - Comprehensive project documentation
 - End-to-end manual testing
-
----
-
-## 📸 Project Screenshots
-
-### 🏠 Home Page
-
-<img src="screenshots/image1.png" width="900"/>
-
-A modern landing page introducing Novaris, its core capabilities, platform features, interactive demo guide, and public dataset for visitors to explore without authentication.
-
----
-
-### 🔐 Secure Login
-
-<img src="screenshots/image7.png" width="900"/>
-
-JWT-based authentication using HttpOnly cookies with secure session management and refresh token support.
-
----
-
-### 📊 Dashboard
-
-<img src="screenshots/image8.png" width="900"/>
-
-Displays authenticated user information, assigned role, and quick access to AI chat, dataset viewer, and password management.
-
----
-
-### 🤖 AI Chat (RAG)
- 
-<img src="screenshots/image10.png" width="900"/>   
-
-Enterprise Retrieval-Augmented Generation (RAG) interface that answers questions exclusively from authorized company documents while enforcing Role-Based Access Control.
-
----
-
-### 📜 Example Questions
-
-<img src="screenshots/image9.png" width="900"/>
-
-Built-in example prompts help users quickly explore the knowledge base without needing to invent their own queries.
-
----
-
-### 📚 Public Dataset Viewer
-
-<img src="screenshots/image11.png" width="900"/>
-
-Browse the complete company dataset without authentication and open individual documents through an interactive document viewer.
-
----
-
-### 💡 Interactive Knowledge Cards
-
-<img src="screenshots/image4.png" width="900"/>
-
-Clickable cards showcasing interesting facts about the platform while demonstrating interactive frontend components.
-
----
-
-### 👨‍💻 Meet the Builders
-
-<img src="screenshots/image12.png" width="900"/>
-<img src="screenshots/image.png" width="900"/>
-
-Introduces the developers behind Novaris with a polished team section and project credits.
 
 ---
 
