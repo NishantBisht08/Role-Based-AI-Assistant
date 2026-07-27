@@ -107,9 +107,9 @@ This removes any dependency on floating-point equality comparisons between JWT p
 
 ---
 
-## 4. UI/UX Enhancements
+## UI/UX Enhancements (Completed in v1)
 
-Planned frontend improvements include:
+Frontend improvements include:
 
 - Fully responsive design
 - Modern dashboard layout
@@ -122,14 +122,19 @@ Planned frontend improvements include:
 
 ---
 
-## 5. Deployment
+## Deployment (Completed in v1)
 
-Prepare the application for production deployment.
+✓ AWS EC2 deployment
+✓ Dockerized backend
+✓ Caddy reverse proxy
+✓ HTTPS via Let's Encrypt
+✓ DuckDNS custom domain
+✓ Supabase PostgreSQL integration
 
-Planned work includes:
+Future deployment improvements
 
-- Docker containerization
-- Environment-specific configuration
-- HTTPS support
-- Reverse proxy configuration
-- Cloud deployment
+- CI/CD using GitHub Actions
+- Docker Compose
+- Nginx/Caddy configuration optimization
+- Kubernetes (learning project)
+- Monitoring and logging

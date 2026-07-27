@@ -12,6 +12,13 @@ Base URL (Development)
 http://localhost:8000
 ```
 
+Production Base URL
+
+```
+https://novaris-rag.duckdns.org
+```
+
+
 All request and response bodies use JSON unless otherwise specified.
 
 Authentication is handled using HttpOnly cookies.

@@ -209,6 +209,24 @@ Verified across:
 - ✅ Change Password
 - ✅ AI Question endpoint
 
+## Deployment Testing
+
+✓ HTTPS working
+
+✓ Domain resolution working
+
+✓ Frontend loads correctly
+
+✓ Backend endpoints reachable
+
+✓ Admin Create User verified after Caddy update
+
+✓ Public dataset accessible
+
+✓ RBAC verified after deployment
+
+✓ Cross-device access verified
+
 ---
 
 # ✅ Overall Result
@@ -256,6 +274,10 @@ Verified across:
 ## Absolute Session Expiry
 
 - ✅ Verified
+
+## Deployment
+
+- ✅ Working
 
 ---
 

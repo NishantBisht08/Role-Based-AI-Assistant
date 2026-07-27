@@ -90,7 +90,7 @@ RAG authorization separation
 PostgreSQL integration
 
 
-Remaining Functional Frontend Work
+Remaining Functional Frontend Work is completed now
 
 Documents page
 Dataset page
@@ -140,6 +140,18 @@ Manual Testing & Verification
 8. Verified role-based document access for all supported roles.
 9. Confirmed chat history persistence, cleanup on logout, and conversation limits.
 10. Documented all test cases in a dedicated Manual Testing Report.
+
+Latest work:
+
+Deployment
+
+✓ Backend deployed to AWS EC2
+✓ Dockerized backend running in production
+✓ Frontend served through Caddy
+✓ HTTPS enabled using Let's Encrypt
+✓ DuckDNS configured
+✓ Production deployment verified
+✓ Admin endpoint deployment issue resolved
 
 Documentation
 

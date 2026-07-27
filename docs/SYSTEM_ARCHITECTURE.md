@@ -11,35 +11,57 @@ This document describes the end-to-end architecture of the Role-Based AI Assista
 # High-Level Architecture
 
 ```
-                    +----------------------+
-                    |   React Frontend     |
-                    +----------+-----------+
-                               |
-                               | HTTPS
-                               |
-                    +----------v-----------+
-                    |     FastAPI API      |
-                    +----------+-----------+
-                               |
-        +----------------------+----------------------+
-        |                      |                      |
-        |                      |                      |
-+-------v------+      +--------v--------+     +------v-------+
-| Authentication|      | PostgreSQL DB |     |  RAG Engine   |
-+--------------+      +----------------+     +------+--------+
-                                                      |
-                                           +----------v----------+
-                                           |    ChromaDB         |
-                                           +----------+----------+
-                                                      |
-                                           +----------v----------+
-                                           | HuggingFace         |
-                                           | Embeddings          |
-                                           +----------+----------+
-                                                      |
-                                           +----------v----------+
-                                           |   Groq LLaMA        |
-                                           +---------------------+
+                            +----------------------+
+                            |        User          |
+                            +----------+-----------+
+                                       |
+                                       | HTTPS
+                                       |
+                            +----------v-----------+
+                            | DuckDNS Domain       |
+                            | novaris-rag.duckdns.org
+                            +----------+-----------+
+                                       |
+                                       |
+                            +----------v-----------+
+                            | AWS EC2 Instance     |
+                            +----------+-----------+
+                                       |
+                 +---------------------+----------------------+
+                 |                                            |
+                 |                                            |
+      +----------v-----------+                     +-----------v----------+
+      |       Caddy          |                     |   React Frontend     |
+      | Reverse Proxy        |<------------------->|   (Built dist/)      |
+      +----------+-----------+                     +----------------------+
+                 |
+                 | Reverse Proxy
+                 |
+      +----------v-----------+
+      | Docker Container     |
+      | FastAPI Backend      |
+      +----------+-----------+
+                 |
+      +----------+-----------+------------------------------+
+      |                      |                              |
+      |                      |                              |
++-----v------+      +--------v--------+          +----------v----------+
+|Authentication|     | Supabase       |          |     RAG Engine      |
++-------------+     | PostgreSQL DB  |          +----------+----------+
+                                                 |
+                                      +----------v----------+
+                                      |     ChromaDB        |
+                                      +----------+----------+
+                                                 |
+                                      +----------v----------+
+                                      | HuggingFace         |
+                                      | Embedding Model     |
+                                      +----------+----------+
+                                                 |
+                                      +----------v----------+
+                                      |   Groq Qwen 3.6     |
+                                      |      27B LLM        |
+                                      +---------------------+
 ```
 
 ---
@@ -53,7 +75,23 @@ User
 
 ↓
 
-React
+HTTPS Request
+
+↓
+
+DuckDNS
+
+↓
+
+AWS EC2
+
+↓
+
+Caddy
+
+↓
+
+React Frontend
 
 ↓
 
@@ -69,7 +107,7 @@ Authentication
 
 ↓
 
-Authorization
+Authorization (RBAC)
 
 ↓
 
@@ -77,11 +115,23 @@ RAG Pipeline
 
 ↓
 
-LLM
+ChromaDB
 
 ↓
 
-Frontend
+Groq Qwen 3.6 27B
+
+↓
+
+Response
+
+↓
+
+React Frontend
+
+↓
+
+User
 ```
 
 ---

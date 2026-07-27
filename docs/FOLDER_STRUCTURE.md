@@ -36,7 +36,12 @@ Role-Based-AI-Assistant/
 ├── docs/
 │
 └── .env
-```
+│   └── general/
+│
+├── Dockerfile/
+|
+│__ .dockerignore 
+
 
 ---
 

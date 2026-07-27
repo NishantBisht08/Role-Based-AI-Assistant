@@ -479,11 +479,12 @@ End-to-End Functional Testing
 
 ✅ Complete
 
-Remaining Work
 
-- UI/UX Styling
+Remaining work below is also completed:
+- UI/UX Styling       
 - Responsive Design
 - Visual Polish
+- Deployment
 
 ---
 
@@ -503,6 +504,24 @@ Core design principles:
 - Preserve modular backend components.
 - Keep API communication centralized.
 - Prefer readability and maintainability over unnecessary abstractions.
+
+# Deployment
+
+Backend
+- AWS EC2
+- Docker
+
+Frontend
+- React build served by Caddy
+
+Database
+- Supabase PostgreSQL
+
+HTTPS
+- Let's Encrypt
+
+Domain
+- DuckDNS
 
 ---
 
