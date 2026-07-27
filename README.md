@@ -228,39 +228,6 @@ A modern landing page introducing Novaris, its core capabilities, platform featu
 
 ---
 
-### ⚡ Platform Features
-
-<img src="screenshots/image2.png" width="900"/>
-
-Highlights the technologies powering Novaris, including JWT Authentication, Role-Based Access Control (RBAC), FastAPI, PostgreSQL, LangChain, and ChromaDB.
-
----
-
-### 🎯 Demo Guide
-
-<img src="screenshots/image3.png" width="900"/>
-
-Interactive walkthrough that helps first-time users understand the application's workflow before logging in.
-
----
-
-### 💡 Interactive Knowledge Cards
-
-<img src="screenshots/image4.png" width="900"/>
-
-Clickable cards showcasing interesting facts about the platform while demonstrating interactive frontend components.
-
----
-
-### 👨‍💻 Meet the Builders
-
-<img src="screenshots/image5.png" width="900"/>
-<img src="screenshots/image6.png" width="900"/>
-
-Introduces the developers behind Novaris with a polished team section and project credits.
-
----
-
 ### 🔐 Secure Login
 
 <img src="screenshots/image7.png" width="900"/>
@@ -277,11 +244,11 @@ Displays authenticated user information, assigned role, and quick access to AI c
 
 ---
 
-### 📚 Public Dataset Viewer
+### 🤖 AI Chat (RAG)
+ 
+<img src="screenshots/image10.png" width="900"/>   
 
-<img src="screenshots/image.png" width="900"/>
-
-Browse the complete company dataset without authentication and open individual documents through an interactive document viewer.
+Enterprise Retrieval-Augmented Generation (RAG) interface that answers questions exclusively from authorized company documents while enforcing Role-Based Access Control.
 
 ---
 
@@ -293,15 +260,31 @@ Built-in example prompts help users quickly explore the knowledge base without n
 
 ---
 
-### 🤖 AI Chat (RAG)
- 
-<img src="screenshots/image10.png" width="900"/>   
+### 📚 Public Dataset Viewer
 
-Enterprise Retrieval-Augmented Generation (RAG) interface that answers questions exclusively from authorized company documents while enforcing Role-Based Access Control.
+<img src="screenshots/image11.png" width="900"/>
+
+Browse the complete company dataset without authentication and open individual documents through an interactive document viewer.
+
+---
+
+### 💡 Interactive Knowledge Cards
+
+<img src="screenshots/image4.png" width="900"/>
+
+Clickable cards showcasing interesting facts about the platform while demonstrating interactive frontend components.
 
 ---
 
+### 👨‍💻 Meet the Builders
+
+<img src="screenshots/image12.png" width="900"/>
+<img src="screenshots/image.png" width="900"/>
+
+Introduces the developers behind Novaris with a polished team section and project credits.
+
 ---
+
 
 
 ## Project Structure
