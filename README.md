@@ -160,64 +160,6 @@ The application is accessible securely over HTTPS from any internet-connected de
 
 ---
 
-## High-Level Architecture
-
-```
-
-User
-│
-▼
-HTTPS
-│
-▼
-DuckDNS
-│
-▼
-AWS EC2
-│
-▼
-Caddy
-│
-├──────────► React Frontend
-│
-▼
-Docker Container
-│
-▼
-FastAPI Backend
-│
-├────────► Authentication
-├────────► Supabase PostgreSQL
-└────────► RAG Engine
-│
-▼
-ChromaDB
-│
-▼
-Groq Qwen 3.6 27B
-│
-▼
-AI Response
-
-```
-
----
-
-## Project Highlights
-
-- Production-ready deployment on AWS EC2
-- Secure enterprise authentication
-- Role-Based Access Control (RBAC)
-- Retrieval-Augmented Generation (RAG)
-- Cloud-hosted PostgreSQL database
-- HTTPS enabled using Caddy and Let's Encrypt
-- Modular FastAPI backend
-- React frontend with centralized API communication
-- Comprehensive project documentation
-- End-to-end manual testing
-
----
-
 ## 📸 Project Screenshots
 
 ### 🏠 Home Page
@@ -285,6 +227,63 @@ Introduces the developers behind Novaris with a polished team section and projec
 
 ---
 
+## High-Level Architecture
+
+```
+
+User
+│
+▼
+HTTPS
+│
+▼
+DuckDNS
+│
+▼
+AWS EC2
+│
+▼
+Caddy
+│
+├──────────► React Frontend
+│
+▼
+Docker Container
+│
+▼
+FastAPI Backend
+│
+├────────► Authentication
+├────────► Supabase PostgreSQL
+└────────► RAG Engine
+│
+▼
+ChromaDB
+│
+▼
+Groq Qwen 3.6 27B
+│
+▼
+AI Response
+
+```
+
+---
+
+## Project Highlights
+
+- Production-ready deployment on AWS EC2
+- Secure enterprise authentication
+- Role-Based Access Control (RBAC)
+- Retrieval-Augmented Generation (RAG)
+- Cloud-hosted PostgreSQL database
+- HTTPS enabled using Caddy and Let's Encrypt
+- Modular FastAPI backend
+- React frontend with centralized API communication
+- Comprehensive project documentation
+- End-to-end manual testing
+
+---
 
 
 ## Project Structure
