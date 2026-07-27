@@ -218,53 +218,101 @@ AI Response
 
 ---
 
-## Project Screenshots
+## 📸 Project Screenshots
 
-### Home Page
+### 🏠 Home Page
 
-<img src="screenshots/home.png" width="900"/>
+<img src="screenshots/image1.png" width="900"/>
 
-The landing page introduces Novaris, provides project information, and allows visitors to explore the public dataset.
-
----
-
-### Login
-
-<img src="screenshots/login.png" width="900"/>
-
-Secure cookie-based authentication using JWT access tokens, refresh tokens, and HttpOnly cookies.
+A modern landing page introducing Novaris, its core capabilities, platform features, interactive demo guide, and public dataset for visitors to explore without authentication.
 
 ---
 
-### Dashboard
+### ⚡ Platform Features
 
-<img src="screenshots/dashboard.png" width="900"/>
+<img src="screenshots/image2.png" width="900"/>
 
-Displays employee details, role information, accessible documents, and navigation to protected features.
-
----
-
-### AI Chat
-
-<img src="screenshots/chat.png" width="900"/>
-
-Enterprise Retrieval-Augmented Generation (RAG) chat interface with automatic session management and role-aware document retrieval.
+Highlights the technologies powering Novaris, including JWT Authentication, Role-Based Access Control (RBAC), FastAPI, PostgreSQL, LangChain, and ChromaDB.
 
 ---
 
-### Dataset Viewer
+### 🎯 Demo Guide
 
-<img src="screenshots/dataset.png" width="900"/>
+<img src="screenshots/image3.png" width="900"/>
 
-Public dataset viewer and RBAC-protected document browser with role-based visibility.
+Interactive walkthrough that helps first-time users understand the application's workflow before logging in.
 
 ---
 
-### Admin Panel
+### 💡 Interactive Knowledge Cards
 
-<img src="screenshots/create-user.png" width="900"/>
+<img src="screenshots/image4.png" width="900"/>
 
-Admin-only interface for creating new employee accounts with role validation.
+Clickable cards showcasing interesting facts about the platform while demonstrating interactive frontend components.
+
+---
+
+### 👨‍💻 Meet the Builders
+
+<img src="screenshots/image5.png" width="900"/>
+
+Introduces the developers behind Novaris with a polished team section and project credits.
+
+---
+
+### 🔐 Secure Login
+
+<img src="screenshots/image6.png" width="900"/>
+
+JWT-based authentication using HttpOnly cookies with secure session management and refresh token support.
+
+---
+
+### 📊 Dashboard
+
+<img src="screenshots/image7.png" width="900"/>
+
+Displays authenticated user information, assigned role, and quick access to AI chat, dataset viewer, and password management.
+
+---
+
+### 📚 Public Dataset Viewer
+
+<img src="screenshots/image.png" width="900"/>
+
+Browse the complete company dataset without authentication and open individual documents through an interactive document viewer.
+
+---
+
+### 📜 Example Questions
+
+<img src="screenshots/image8.png" width="900"/>
+
+Built-in example prompts help users quickly explore the knowledge base without needing to invent their own queries.
+
+---
+
+### 🤖 AI Chat (RAG)
+
+<img src="screenshots/image9.png" width="900"/>
+
+Enterprise Retrieval-Augmented Generation (RAG) interface that answers questions exclusively from authorized company documents while enforcing Role-Based Access Control.
+
+---
+
+### 📄 Document Viewer
+
+<img src="screenshots/image10.png" width="900"/>
+
+Interactive modal for reading complete document contents directly within the application without leaving the dataset browser.
+
+---
+
+### 👨‍💼 Admin Panel
+
+<img src="screenshots/image.png" width="900"/>
+
+Administrator-only interface for creating employee accounts with role validation and secure user management.
 
 
 ## Project Structure
@@ -519,21 +567,22 @@ Suggestions, bug reports, and constructive feedback are always welcome.
 ## Author
 
 **Siddharth Jain**
+**Nishant Bisht**
 
-Computer Science Engineering Student
+Computer Science Engineering Students
 
 Graphic Era Deemed to be University
 
 GitHub:
 
 ```
-https://github.com/<your-username>
+https://github.com/siddhistan
 ```
 
 LinkedIn:
 
 ```
-https://linkedin.com/in/<your-profile>
+https://www.linkedin.com/in/siddharth-jain-494066382 
 ```
 
 ---
@@ -558,14 +607,6 @@ Special thanks to the communities behind:
 - AWS
 
 Their tools and documentation made this project possible.
-
----
-
-## License
-
-This project is released under the MIT License.
-
-Feel free to learn from the implementation, explore the architecture, and use the project for educational purposes.
 
 ---
 
