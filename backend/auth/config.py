@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-from passlib.context import CryptContext
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,9 +22,4 @@ ABSOLUTE_SESSION_EXPIRE_DAYS = float(os.getenv("ABSOLUTE_SESSION_EXPIRE_DAYS", "
 MAX_FAILED_ATTEMPTS = int(os.getenv("MAX_FAILED_ATTEMPTS", "5"))  
 LOCKOUT_BASE_MINUTES = float(os.getenv("LOCKOUT_BASE_MINUTES", "1"))
 LOCKOUT_RESET_HOURS = float(os.getenv("LOCKOUT_RESET_HOURS", "24"))
-
-
-# Use Argon2 for hashing
-#It creates a password hashing manager
-#"This object knows how to hash passwords and verify them using Argon2
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+

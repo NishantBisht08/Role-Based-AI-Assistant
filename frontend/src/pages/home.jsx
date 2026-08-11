@@ -1,12 +1,11 @@
 /**
- * Home — Novaris landing page
+ * Home — Baymax landing page
  *
- * Communicates that Novaris is an Enterprise Knowledge Platform.
+ * Communicates that Baymax is an Enterprise Knowledge Platform.
  * Features: hero, feature cards (max 3/row), demo gate entrance,
  * "Did You Know?" flip cards, and navigation buttons.
  */
 
-import aiImage from "../assets/images/novaris.png";
 import { useNavigate } from "react-router-dom";
 import PageContainer from "../components/layout/PageContainer";
 import Card from "../components/ui/Card";
@@ -105,44 +104,29 @@ function Home() {
     return (
         <>
             {/* Hero — immediately communicates enterprise positioning */}
-            <section
-    className="hero"
-    style={{
-backgroundImage: `
-linear-gradient(
-    rgba(255,255,255,0.05),
-    rgba(15,23,42,0.15)
-),
-url(${aiImage})
-`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-    }}
->
-                <span className="hero__badge"><br></br></span>
-                <h1><br></br></h1>
+            <section className="hero">
+                <span className="hero__badge">✨ v1.0 — Baymax Intelligence</span>
+                <h1>Secure RAG Platform</h1>
                 <p className="hero__subtitle">
-                    <br></br>
-                     <br></br>
+                    The Enterprise Knowledge Platform. Built for secure knowledge sharing with military-grade role-based access control.
                 </p>
-<div className="hero__actions">
-    <Button
-        variant="primary"
-        size="lg"
-        onClick={() => navigate("/login")}
-    >
-        Get Started
-    </Button>
+                <div className="hero__actions">
+                    <Button
+                        variant="primary"
+                        size="lg"
+                        onClick={() => navigate("/login")}
+                    >
+                        Get Started
+                    </Button>
 
-    <Button
-        variant="secondary"
-        size="lg"
-        onClick={() => navigate("/about")}
-    >
-        Learn More
-    </Button>
-</div>
+                    <Button
+                        variant="secondary"
+                        size="lg"
+                        onClick={() => navigate("/about")}
+                    >
+                        Learn More
+                    </Button>
+                </div>
             </section>
 
             <PageContainer>
@@ -176,10 +160,10 @@ url(${aiImage})
                     <GateEntrance />
                 </section>
 
-                {/* Why Choose Novaris */}
+                {/* Why Choose Baymax */}
                 <section className="section">
                     <div className="section-header">
-                        <h2>Why Choose Novaris?</h2>
+                        <h2>Why Choose Baymax?</h2>
                         <p>Purpose-built for organizations that take knowledge security seriously.</p>
                     </div>
                     <div className="card-grid">
@@ -198,7 +182,7 @@ url(${aiImage})
                 <section className="section text-center">
                     <div className="section-header">
                         <h2>Dataset</h2>
-                        <p>Explore the documents and datasets that power Novaris.</p>
+                        <p>Explore the documents and datasets that power Baymax.</p>
                     </div>
                     <Button variant="primary" size="lg" onClick={() => navigate("/dataset")}>
                         View Dataset
@@ -209,7 +193,7 @@ url(${aiImage})
                 <section className="section">
                     <div className="section-header">
                         <h2>Did You Know?</h2>
-                        <p>Click a card to reveal an interesting fact about Novaris.</p>
+                        <p>Click a card to reveal an interesting fact about Baymax.</p>
                     </div>
                     <div className="card-grid">
                         {facts.map((fact) => (
@@ -226,7 +210,7 @@ url(${aiImage})
                 <section className="section text-center">
                     <div className="section-header">
                         <h2>Meet the Builders</h2>
-                        <p>Learn more about the team behind Novaris.</p>
+                        <p>Learn more about the team behind Baymax.</p>
                     </div>
                     <Button variant="secondary" size="lg" onClick={() => navigate("/about-author")}>
                         About the Authors
@@ -236,5 +220,4 @@ url(${aiImage})
         </>
     );
 }
-
 export default Home;

@@ -38,7 +38,19 @@ from backend.auth.config import ABSOLUTE_SESSION_EXPIRE_DAYS, ACCESS_TOKEN_EXPIR
 
 from backend.auth.config import CLIENT_URL
 
-app = FastAPI()
+app = FastAPI()                              # Create FastAPI app
+
+# @app.get("/seed")
+# def seed_database():
+#     import subprocess
+#     try:
+#         result = subprocess.run(["python", "seed_pinecone.py"], capture_output=True, text=True)
+#         if result.returncode == 0:
+#             return {"status": "success", "message": "Database seeded successfully!", "logs": result.stdout}
+#         else:
+#             return {"status": "error", "message": "Seeding failed.", "logs": result.stderr}
+#     except Exception as e:
+#         return {"status": "error", "message": str(e)}
 
 @app.get("/keep-alive")
 def keep_alive():

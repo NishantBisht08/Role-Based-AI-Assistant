@@ -1,31 +1,22 @@
 import time
+import bcrypt
 
 from .database import get_user, update_user
-from .config import pwd_context
 
-
-# Verify password
-'''
-# Verify user password using Argon2 hashing
+# Verify user password using bcrypt hashing
 # Called in this file only inside authenticate_user() during login
 # Compares plain password with stored hash
-'''
-
-#parameters are plain_password that user typed and the already stored hash in db 
-#the plain password is then hased to check it with the hashed paswsord in db
-def verify_password(plain_password, hashed_password):            
-    return pwd_context.verify(plain_password, hashed_password) 
-    '''this line pwd line does this internally:
-
-         Takes the plain password
-         Uses same algorithm (Argon2)
-         Re-hashes it
-         Compares with stored hash
-         It returns true if password is correct else false'''
-         
-         
-         
-
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not hashed_password:
+        return False
+    # bcrypt expects bytes for both the password and the hash
+    password_bytes = plain_password.encode('utf-8')
+    try:
+        hash_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hash_bytes)
+    except Exception:
+        # Failsafe if the hash is malformed or an incompatible format
+        return False
 
 #emp_id and new password entered by user are sent as parameters here
 def set_user_password(emp_id: str, new_password: str):  
@@ -41,7 +32,9 @@ def set_user_password(emp_id: str, new_password: str):
         return "ALREADY_SET"
 
     # Hash new password
-    hashed_password = pwd_context.hash(new_password)
+    password_bytes = new_password.encode('utf-8')
+    hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+    hashed_password = hashed_bytes.decode('utf-8')
 
     # Store new hashed password in db
     user["password_hash"] = hashed_password
@@ -49,12 +42,6 @@ def set_user_password(emp_id: str, new_password: str):
     update_user(emp_id, user)   #save to database
 
     return "SUCCESS"      #password is set successfully
-
-
-
-
-
-
 
 #user enters his emp_id, old password, and new password which he wants to replace with the old pasword
 def change_user_password(emp_id: str, old_password: str, new_password: str):
@@ -80,7 +67,9 @@ def change_user_password(emp_id: str, old_password: str, new_password: str):
         return "WRONG_PASSWORD"
 
     # Hash new password, if verify password returns true
-    new_hash = pwd_context.hash(new_password)
+    password_bytes = new_password.encode('utf-8')
+    hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+    new_hash = hashed_bytes.decode('utf-8')
 
     # Update new password in db
     user["password_hash"] = new_hash
