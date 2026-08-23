@@ -7,28 +7,25 @@
  */
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import useVerifySession from "../hooks/use_verify_session";
-import { useNavigate } from "react-router-dom";
+
 import { askQuestion } from "../services/auth";
 import ParchmentScroll from "../components/common/ParchmentScroll";
 import MessageBubble from "../components/chat/MessageBubble";
 import Button from "../components/ui/Button";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 const MAX_CHARACTERS = 2000;
 const MAX_EXCHANGES = 5;
 
 function Chat() {
     const { user } = useAuth();
-    const navigate = useNavigate();
-    const verifySession = useVerifySession();
     const messagesEndRef = useRef(null);
 
-    const [checking, setChecking] = useState(true);
     const [messages, setMessages] = useState([]);
     const [historyLoaded, setHistoryLoaded] = useState(false);
+
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+
     const [error, setError] = useState("");
     const [showQuestions, setShowQuestions] = useState(false);
     const [hasTyped, setHasTyped] = useState(false);
@@ -58,27 +55,12 @@ function Chat() {
         sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
     }, [messages, CHAT_STORAGE_KEY, historyLoaded, user]);
 
-    // Verify session on mount
-    useEffect(() => {
-        async function checkSession() {
-            const valid = await verifySession();
-            if (!valid) {
-                navigate("/login", { replace: true });
-                return;
-            }
-            setChecking(false);
-        }
-        checkSession();
-    }, [navigate, verifySession]);
 
     // Auto-scroll to latest message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, loading]);
 
-    if (checking) {
-        return <LoadingSpinner text="Loading chat..." />;
-    }
 
     const handleSend = async () => {
         if (!input.trim()) return;

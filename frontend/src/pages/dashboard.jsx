@@ -5,14 +5,12 @@
  * and role-based access level card. Preserves all existing
  * session verification and RBAC display logic.
  */
-import { useEffect, useState } from "react";
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import useVerifySession from "../hooks/use_verify_session";
 import PageContainer from "../components/layout/PageContainer";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
 import novaImage from "../assets/images/nova.png";
 
 const folderDisplayNames = {
@@ -25,26 +23,7 @@ const folderDisplayNames = {
 
 function Dashboard() {
     const navigate = useNavigate();
-    const verifySession = useVerifySession();
-    const [checking, setChecking] = useState(true);
-
-    useEffect(() => {
-        async function checkSession() {
-            const valid = await verifySession();
-            if (!valid) {
-                navigate("/login", { replace: true });
-                return;
-            }
-            setChecking(false);
-        }
-        checkSession();
-    }, [navigate, verifySession]);
-
-    const { user, loading } = useAuth();
-
-    if (loading || checking) {
-        return <LoadingSpinner text="Loading dashboard..." />;
-    }
+    const { user } = useAuth();
 
     // Avatar initials from user name
     const initials = user.name

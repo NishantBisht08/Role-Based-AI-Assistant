@@ -38,6 +38,7 @@ function getRequestPath(config) {
     }
 }
 
+//interceptor is only used for api not for refreshClient
 api.interceptors.response.use(
     (response) => response,
 
@@ -73,7 +74,9 @@ api.interceptors.response.use(
             await refreshPromise;
 
             return api(originalRequest);
-        } catch (refreshError) {
+        } 
+        
+        catch (refreshError) {     //the error object is recieved in the refreshError variable
             /*
              * AuthProvider uses suppressAuthRedirect for its startup /me check.
              * An unauthenticated visitor on a public page should not be

@@ -4,20 +4,17 @@
  * Preserves admin role check, session verification, and createUser() API.
  * Uses AuthCard layout for visual consistency with other auth pages.
  */
-import { useState, useEffect } from "react";
+import { useState} from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import useVerifySession from "../hooks/use_verify_session";
+
 import { useAuth } from "../contexts/AuthContext";
 import { createUser } from "../services/auth";
 import AuthCard from "../components/layout/AuthCard";
 import Button from "../components/ui/Button";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 function CreateUser() {
     const navigate = useNavigate();
-    const { user, loading } = useAuth();
-    const verifySession = useVerifySession();
-    const [checking, setChecking] = useState(true);
+    const { user } = useAuth();
 
     const [empId, setEmpId] = useState("");
     const [name, setName] = useState("");
@@ -25,22 +22,6 @@ function CreateUser() {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
-
-    useEffect(() => {
-        async function checkSession() {
-            const valid = await verifySession();
-            if (!valid) {
-                navigate("/login", { replace: true });
-                return;
-            }
-            setChecking(false);
-        }
-        checkSession();
-    }, [navigate, verifySession]);
-
-    if (loading || checking) {
-        return <LoadingSpinner text="Verifying session..." />;
-    }
 
     if (user?.role !== "admin") {
         return <Navigate to="/dashboard" replace />;

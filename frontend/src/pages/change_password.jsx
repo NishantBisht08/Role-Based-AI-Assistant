@@ -4,40 +4,27 @@
  * Preserves session verification, password validation, and automatic
  * logout after successful change (matching backend security behavior).
  */
-import { useState, useEffect } from "react";
+import { useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { changePassword, logout } from "../services/auth";
 import { useAuth } from "../contexts/AuthContext";
-import useVerifySession from "../hooks/use_verify_session";
+
 import AuthCard from "../components/layout/AuthCard";
 import Button from "../components/ui/Button";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 function ChangePassword() {
     const navigate = useNavigate();
-    const { user, setUser, loading } = useAuth();
-    const verifySession = useVerifySession();
-    const [checking, setChecking] = useState(true);
+    const { user, setUser } = useAuth();
 
     const [empId, setEmpId] = useState("");
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
+
     const [confirmPassword, setConfirmPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
+
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-
-    useEffect(() => {
-        async function checkSession() {
-            const valid = await verifySession();
-            if (!valid) {
-                navigate("/login", { replace: true });
-                return;
-            }
-            setChecking(false);
-        }
-        checkSession();
-    }, [navigate, verifySession]);
 
     async function handleSubmit(event) {
         event.preventDefault();
@@ -77,9 +64,6 @@ function ChangePassword() {
         }
     }
 
-    if (loading || checking) {
-        return <LoadingSpinner text="Verifying session..." />;
-    }
 
     return (
         <AuthCard
