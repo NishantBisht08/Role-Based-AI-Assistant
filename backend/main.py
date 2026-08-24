@@ -26,11 +26,15 @@ from backend.auth import (           #importing all the functions defined in the
     create_refresh_token,
     refresh_access_token,
     logout_user,
+    
     get_user,
     update_user,
+    db_create_user,
+    
     set_user_password,
     change_user_password,
     get_current_user,
+  
 )
 
 from backend.auth.config import ABSOLUTE_SESSION_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
@@ -54,21 +58,7 @@ app.add_middleware(
 ALLOWED_ROLES = {"admin", "hr", "engineering", "employee", "marketing", "finance", "c-level"} #List for allowed folders
 
 
-
-
-# NEW: Model for login request body
-class LoginRequest(BaseModel):
-    emp_id: str
-    password: str
-
-
-# CHANGED: Old QueryRequest had role + question
-# Now role is removed and replaced with token
-class QueryRequest(BaseModel):
-    token: str
-    question: str
-    
-    
+   
 
 # ── Public Dataset Endpoint ───────────────────────────────────────────────────
 # Returns metadata for every document in the dataset.
@@ -149,12 +139,18 @@ def public_document(document_id: str):
 
 
 
+
+# NEW: Model for login request body
+class LoginRequest(BaseModel):
+    emp_id: str
+    password: str 
+
 # NEW: Login endpoint  (When the user hits login)
 @app.post("/login")
 def login(request: LoginRequest):
 
     # NEW: Check if emp_id + password are correct, we go to auth.py file to check
-    user = authenticate_user(request.emp_id, request.password)
+    user = authenticate_user(request.emp_id, request.password) #login.py file executes
     
     if user=="LOCKED": #if account is locked
         raise HTTPException(status_code=403, detail="Account locked. Try again later.") #We send hhtp response back to the client and the client understands the type of error
@@ -306,50 +302,16 @@ class QueryRequest(BaseModel):
     )
     
 @app.post("/ask")  #we click the ask button
-def ask_ai(request: Request, query: QueryRequest):   #defining the ask endpoint here, user provides token and question
+def ask_ai(query: QueryRequest, current_user= Depends(get_current_user)):   #defining the ask endpoint here, user provides token and question
     
-    access_token = request.cookies.get("access_token")  #reading JWT token from browser 
-
-    if not access_token:
-              raise HTTPException(
-              status_code=401,
-              detail="Access token missing"
-            )
-    
-    # NEW: Verify token and extract payload from JWT, verify function is called here and executes in auth.py file
-    payload = verify_token(access_token) #We pass access token as argument, the function returns payload which contains emp_id, role and the expiry date of the token
-
-    # If token invalid or expired → error is shown to user
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    
-    emp_id = payload["sub"].lower()  #We store the emp_id of user from the returned payload in the emp_id variable,
-
-    # We Load users from database
-   
-    user = get_user(emp_id)   # fetch user from DB using his emp_id
-
-    if not user:  #if user not found, error is raised
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # absolute session expiry check
-    ABSOLUTE_SESSION_EXPIRE_SECONDS = ABSOLUTE_SESSION_EXPIRE_DAYS * 86400
-    if time.time() > user.get("session_start", 0) + ABSOLUTE_SESSION_EXPIRE_SECONDS:
-            raise HTTPException(status_code=401, detail="Session expired. Please login again.")
-    
-    token_session = payload.get("session_start")
-
-    #if user isn't logged in (he has logged out), session_start_time wouldn't match. Here, we are checking session_start time of jwt with Database
-    if token_session != user.get("session_start"):
-        raise HTTPException(status_code=401, detail="Session expired. Please login again.")
-
-    # Check if account is locked, if it is, then error is raised
-    #If the account is locked, then even if access token(JWT) is valid, you can't ask and error is raised
-    if user["lock_until"] > time.time():
-        raise HTTPException(status_code=403, detail="Account is locked")
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="not authenticated"
+        )
 
     # IMPORTANT: # Get role from database (do NOT trust role from JWT for security reasons), also if admin changed user's role, so we are checking to make sure the role is correct 
-    role = user["role"]
+    role = current_user["role"]
     
     question = query.question.strip()
     
@@ -459,36 +421,7 @@ def create_user(request: CreateUserRequest,
     if role == "admin":
         raise HTTPException(status_code=403, detail="Cannot create admin users")
 
-    # Create new user WITHOUT password
-    conn = connection_pool.getconn()
-    try:
-        cur = conn.cursor()
-
-        cur.execute("""
-            INSERT INTO users (
-                emp_id, name, password_hash, role,
-                failed_attempts, lock_until, lock_count,
-                last_failed_login, refresh_token,
-                refresh_token_expiry, session_start
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            emp_id,
-            name,
-            "",
-            role,
-            0,
-            0,
-            0,
-            0,
-            "",
-            0,
-            0
-        ))
-
-        conn.commit()
-        cur.close()
-    finally:
-        connection_pool.putconn(conn)
+    db_create_user(emp_id, name, role)
 
     return {"message": f"User {emp_id} created successfully"}
 
